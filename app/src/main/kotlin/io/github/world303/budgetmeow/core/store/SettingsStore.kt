@@ -121,6 +121,23 @@ class SettingsStore(private val storage: LocalStorage) {
         publish()
     }
 
+    suspend fun setWallpaper(source: File?) = mutex.withLock {
+        val activeId = index.activeProfileId ?: return@withLock
+        val path = if (source == null) {
+            storage.clearWallpaper()
+            null
+        } else {
+            storage.setWallpaper(source)
+        }
+        index = index.copy(
+            profiles = index.profiles.map {
+                if (it.id == activeId) it.copy(settings = it.settings.copy(wallpaperPath = path)) else it
+            },
+        )
+        storage.saveIndex(index)
+        publish()
+    }
+
     suspend fun updateAvatar(source: File?) = mutex.withLock {
         val activeId = index.activeProfileId ?: return@withLock
         val path = if (source == null) null else storage.copyAvatar(activeId, source)

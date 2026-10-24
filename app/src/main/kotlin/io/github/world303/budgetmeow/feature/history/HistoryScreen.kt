@@ -48,6 +48,7 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -142,6 +143,7 @@ fun HistoryScreen(
     store: BudgetStore,
     onBack: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenStats: () -> Unit,
     snackbar: SnackbarHostState,
 ) {
     val state by store.state.collectAsState()
@@ -178,6 +180,13 @@ fun HistoryScreen(
         snackbar = snackbar,
         actions = {
             if (!selecting) {
+                IconButton(onClick = onOpenStats) {
+                    Icon(
+                        imageVector = MiuixIcons.Report,
+                        contentDescription = "统计",
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
                 IconButton(onClick = onOpenSearch) {
                     Icon(
                         imageVector = MiuixIcons.Search,

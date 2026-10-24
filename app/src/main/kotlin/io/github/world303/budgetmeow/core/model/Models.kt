@@ -175,8 +175,13 @@ object TimeUtil {
     fun isoToLocalDate(iso: String, zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
         runCatching { Instant.parse(iso).atZone(zone).toLocalDate() }.getOrNull()
 
-    /** Web 端筛选日期时用的是 ISO 字符串前 10 位（UTC 日期），这里保持一致 */
-    fun isoDatePart(iso: String): String = if (iso.length >= 10) iso.substring(0, 10) else iso
+    /**
+     * 筛选用的本地日期（yyyy-MM-dd）。
+     * Web 端用的是 ISO 字符串前 10 位，那是 UTC 日期：北京时间 8 点前记的账会被算成前一天。
+     */
+    fun isoLocalDatePart(iso: String, zone: ZoneId = ZoneId.systemDefault()): String =
+        runCatching { Instant.parse(iso).atZone(zone).toLocalDate().toString() }
+            .getOrElse { if (iso.length >= 10) iso.substring(0, 10) else iso }
 }
 
 object Ids {

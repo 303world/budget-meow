@@ -12,7 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val container = (application as MeowApplication).container
         setContent {
-            MeowApp(container)
+            MeowApp(container, this)
         }
     }
 }

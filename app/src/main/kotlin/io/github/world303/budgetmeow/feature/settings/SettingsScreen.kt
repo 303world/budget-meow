@@ -1,12 +1,23 @@
 package io.github.world303.budgetmeow.feature.settings
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,31 +26,46 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.model.AppTheme
-import io.github.world303.budgetmeow.core.model.HeaderDisplayMode
 import io.github.world303.budgetmeow.core.model.MeowSettings
 import io.github.world303.budgetmeow.core.model.Profile
 import io.github.world303.budgetmeow.core.model.ThemeMode
+import io.github.world303.budgetmeow.core.model.formatMoney
+import io.github.world303.budgetmeow.feature.about.APP_VERSION
 import io.github.world303.budgetmeow.ui.component.ConfirmDialog
 import io.github.world303.budgetmeow.ui.component.InputDialog
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowPage
 import io.github.world303.budgetmeow.ui.component.MeowRow
-import io.github.world303.budgetmeow.ui.component.MeowSection
 import io.github.world303.budgetmeow.ui.component.MeowSwitchRow
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private const val CONTACT_EMAIL = "714945046@qq.com"
+private const val ORIGINAL_SITE = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
+
+/**
+ * 设置页。分组与顺序对齐网页版原版：
+ * 本月预算卡 → 通用 → 账号 → 隐私 → 备份 → 联系我们/关于。
+ */
 @Composable
 fun SettingsScreen(
     profile: Profile,
     month: String,
+    budget: Double,
     onBack: () -> Unit,
     onUpdateSettings: ((MeowSettings) -> MeowSettings) -> Unit,
     onOpenAccount: () -> Unit,
@@ -48,25 +74,27 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onRenameNickname: (String) -> Unit,
     onPickAvatar: () -> Unit,
+    onPickWallpaper: () -> Unit,
+    onRemoveWallpaper: () -> Unit,
     onEditBudget: () -> Unit,
     onClearMonth: () -> Unit,
     onResetAll: () -> Unit,
     snackbar: SnackbarHostState,
 ) {
     val settings = profile.settings
-    var showThemePicker by remember { mutableStateOf(false) }
-    var showDarkPicker by remember { mutableStateOf(false) }
-    var showHeaderPicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    var generalOpen by remember { mutableStateOf(true) }
+    var accountOpen by remember { mutableStateOf(false) }
+    var privacyOpen by remember { mutableStateOf(false) }
+    var backupOpen by remember { mutableStateOf(false) }
+
+    var showScheduleEditor by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
-    var showTimeEdit by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
 
-    MeowPage(
-        title = "设置",
-        onBack = onBack,
-        snackbar = snackbar,
-    ) { padding ->
+    MeowPage(title = "设置", onBack = onBack, snackbar = snackbar) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -74,76 +102,194 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 28.dp),
         ) {
-            // ---------------- 账号 ----------------
-            MeowSection(title = "账号") {
-                MeowRow(
-                    title = profile.nickname,
-                    summary = "本地配置档 · 数据只在这台设备上",
-                    showArrow = true,
-                    onClick = onOpenAccount,
-                )
-                MeowDivider()
-                MeowRow(
-                    title = "云端同步",
-                    summary = "v2 计划：登录后跨设备同步，当前版本纯离线",
-                    trailingText = "即将推出",
-                    onClick = { },
-                )
+            // ---------------- 本月预算 ----------------
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .clickable { onEditBudget() },
+                cornerRadius = 16.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "¥${budget.formatMoney()}",
+                            style = MiuixTheme.textStyles.title2,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "修改本月预算 · $month",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                    Icon(
+                        imageVector = MiuixIcons.Basic.ArrowRight,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                }
             }
 
-            // ---------------- 外观 ----------------
-            MeowSection(title = "外观") {
-                MeowRow(
-                    title = "配色",
-                    trailingText = if (settings.appTheme == AppTheme.Pink) "粉色" else "默认",
-                    showArrow = true,
-                    onClick = { showThemePicker = true },
+            // ---------------- 通用 ----------------
+            MeowCollapsible(
+                title = "通用",
+                expanded = generalOpen,
+                onToggle = { generalOpen = !generalOpen },
+            ) {
+                // 深色模式（定时开启时置灰，与网页版一致）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "深色模式",
+                        style = MiuixTheme.textStyles.body1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    MeowSegmented(
+                        options = listOf("跟随系统", "浅色", "深色"),
+                        selectedIndex = when (settings.theme) {
+                            ThemeMode.Light -> 1
+                            ThemeMode.Dark -> 2
+                            else -> 0
+                        },
+                        enabled = !settings.scheduledDarkMode,
+                        onSelect = { index ->
+                            onUpdateSettings {
+                                it.copy(
+                                    theme = when (index) {
+                                        1 -> ThemeMode.Light
+                                        2 -> ThemeMode.Dark
+                                        else -> ThemeMode.System
+                                    },
+                                )
+                            }
+                        },
+                    )
+                }
+                MeowDivider()
+
+                // 自定义时间 + 定时深色
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "自定义时间",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (settings.hasSetScheduleTime) {
+                                "${settings.darkStartTime}~${settings.darkEndTime}"
+                            } else {
+                                "22:00~07:00"
+                            },
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.clickable { showScheduleEditor = true },
+                        )
+                    }
+                    Box {
+                        Switch(
+                            checked = settings.scheduledDarkMode,
+                            onCheckedChange = { checked ->
+                                if (checked && !settings.hasSetScheduleTime) showScheduleEditor = true
+                                onUpdateSettings {
+                                    it.copy(
+                                        scheduledDarkMode = checked,
+                                        theme = if (checked) ThemeMode.Scheduled else ThemeMode.System,
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+                MeowDivider()
+
+                // 主题
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "主题",
+                        style = MiuixTheme.textStyles.body1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    MeowSegmented(
+                        options = listOf("默认", "喵粉"),
+                        selectedIndex = if (settings.appTheme == AppTheme.Pink) 1 else 0,
+                        onSelect = { index ->
+                            onUpdateSettings {
+                                it.copy(appTheme = if (index == 1) AppTheme.Pink else AppTheme.Default)
+                            }
+                        },
+                    )
+                }
+                MeowDivider()
+
+                MeowSwitchRow(
+                    title = "液态玻璃",
+                    summary = "顶栏、快捷按钮与计算器使用实时背景模糊",
+                    checked = settings.glassEffect,
+                    onCheckedChange = { checked -> onUpdateSettings { it.copy(glassEffect = checked) } },
                 )
                 MeowDivider()
+
                 MeowRow(
-                    title = "深色模式",
-                    trailingText = when (settings.theme) {
-                        ThemeMode.System -> "跟随系统"
-                        ThemeMode.Light -> "浅色"
-                        ThemeMode.Dark -> "深色"
-                        ThemeMode.Scheduled -> "${settings.darkStartTime} - ${settings.darkEndTime}"
+                    title = "导入壁纸",
+                    summary = if (settings.wallpaperPath != null) "已设置" else "玻璃效果需要壁纸才看得出层次",
+                    trailing = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (settings.wallpaperPath != null) {
+                                MeowPillButton("移除", MeowPalette.Red, onRemoveWallpaper)
+                            }
+                            MeowPillButton("选择", MeowPalette.Blue, onPickWallpaper)
+                        }
                     },
-                    showArrow = true,
-                    onClick = { showDarkPicker = true },
                 )
                 MeowDivider()
+
                 MeowSwitchRow(
                     title = "粗体字",
-                    summary = "整体字重加粗一档",
                     checked = settings.boldText,
-                    onCheckedChange = { checked ->
-                        onUpdateSettings { it.copy(boldText = checked) }
-                    },
+                    onCheckedChange = { checked -> onUpdateSettings { it.copy(boldText = checked) } },
                 )
                 MeowDivider()
+
+                MeowSwitchRow(
+                    title = "全屏模式",
+                    summary = "隐藏状态栏与导航栏",
+                    checked = settings.fullScreen,
+                    onCheckedChange = { checked -> onUpdateSettings { it.copy(fullScreen = checked) } },
+                )
+                MeowDivider()
+
                 MeowSwitchRow(
                     title = "显示已节约",
-                    summary = "首页多显示一行省钱累计",
                     checked = settings.showSaved,
-                    onCheckedChange = { checked ->
-                        onUpdateSettings { it.copy(showSaved = checked) }
-                    },
+                    onCheckedChange = { checked -> onUpdateSettings { it.copy(showSaved = checked) } },
                 )
                 MeowDivider()
-                MeowRow(
-                    title = "顶栏显示",
-                    trailingText = when (settings.headerDisplayMode) {
-                        HeaderDisplayMode.Nickname -> profile.nickname
-                        HeaderDisplayMode.Default -> "我的预算"
-                        HeaderDisplayMode.Meow -> "预算喵"
-                        HeaderDisplayMode.Custom -> settings.headerCustomText.ifBlank { "自定义" }
-                    },
-                    showArrow = true,
-                    onClick = { showHeaderPicker = true },
-                )
-                MeowDivider()
+
                 MeowSwitchRow(
-                    title = "用头像当设置按钮",
+                    title = "设置齿轮显示头像",
                     checked = settings.showAvatarAsSettingsIcon,
                     onCheckedChange = { checked ->
                         onUpdateSettings { it.copy(showAvatarAsSettingsIcon = checked) }
@@ -151,49 +297,20 @@ fun SettingsScreen(
                 )
             }
 
-            // ---------------- 记账 ----------------
-            MeowSection(title = "记账") {
+            // ---------------- 账号 ----------------
+            MeowCollapsible(
+                title = "账号",
+                expanded = accountOpen,
+                onToggle = { accountOpen = !accountOpen },
+            ) {
                 MeowRow(
-                    title = "修改本月预算",
-                    summary = "$month · 差额会自动调整余额并留一条调整记录",
-                    showArrow = true,
-                    onClick = onEditBudget,
+                    title = "当前账号",
+                    summary = "本地配置档 · 不联网",
+                    trailingText = profile.nickname,
                 )
                 MeowDivider()
                 MeowRow(
-                    title = "清空本月记录",
-                    summary = "余额重置为本月初始预算",
-                    onClick = { confirmClear = true },
-                )
-                MeowDivider()
-                MeowRow(
-                    title = "重置全部数据",
-                    summary = "清空所有月份、出行与配置档下的账目",
-                    onClick = { confirmReset = true },
-                )
-            }
-
-            // ---------------- 数据 ----------------
-            MeowSection(title = "数据") {
-                MeowRow(
-                    title = "导出备份",
-                    summary = "导出为 JSON，可直接导入网页版",
-                    showArrow = true,
-                    onClick = onExport,
-                )
-                MeowDivider()
-                MeowRow(
-                    title = "导入备份",
-                    summary = "支持网页版 v1 / v2 / v3 备份，会覆盖当前账目",
-                    showArrow = true,
-                    onClick = onImport,
-                )
-            }
-
-            // ---------------- 关于 ----------------
-            MeowSection(title = "关于") {
-                MeowRow(
-                    title = "昵称",
+                    title = "修改昵称",
                     trailingText = profile.nickname,
                     showArrow = true,
                     onClick = { showRename = true },
@@ -206,77 +323,103 @@ fun SettingsScreen(
                 )
                 MeowDivider()
                 MeowRow(
-                    title = "关于预算喵",
-                    summary = "GPL-3.0 · 开源地址与法律条款",
+                    title = "切换 / 新建配置档",
+                    summary = "每份配置档的账目完全隔离",
+                    showArrow = true,
+                    onClick = onOpenAccount,
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "云端同步",
+                    summary = "v2 计划：登录后跨设备同步",
+                    trailingText = "即将推出",
+                )
+            }
+
+            // ---------------- 隐私 ----------------
+            MeowCollapsible(
+                title = "隐私",
+                expanded = privacyOpen,
+                onToggle = { privacyOpen = !privacyOpen },
+            ) {
+                MeowRow(
+                    title = "离线模式",
+                    summary = "这一版没有联网能力，数据只在本机",
+                    trailingText = "始终开启",
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "清空历史记录",
+                    summary = "只清本月流水，余额回到初始预算",
+                    onClick = { confirmClear = true },
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "清空全部数据",
+                    summary = "所有月份与出行记录都会被删除",
+                    onClick = { confirmReset = true },
+                )
+            }
+
+            // ---------------- 备份 ----------------
+            MeowCollapsible(
+                title = "备份",
+                expanded = backupOpen,
+                onToggle = { backupOpen = !backupOpen },
+            ) {
+                MeowRow(
+                    title = "备份数据",
+                    summary = "导出 JSON，可导回网页版",
+                    showArrow = true,
+                    onClick = onExport,
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "恢复数据",
+                    summary = "支持网页版 v1/v2/v3 备份，会覆盖当前账目",
+                    showArrow = true,
+                    onClick = onImport,
+                )
+            }
+
+            // ---------------- 联系我们 / 关于 ----------------
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                cornerRadius = 16.dp,
+            ) {
+                MeowRow(
+                    title = "联系我们",
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_SENDTO,
+                                    Uri.parse("mailto:$CONTACT_EMAIL"),
+                                ),
+                            )
+                        }
+                    },
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "关于",
+                    trailingText = "v$APP_VERSION",
                     showArrow = true,
                     onClick = onOpenAbout,
                 )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "原网页版：$ORIGINAL_SITE",
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
         }
     }
-
-    PickerSheet(
-        show = showThemePicker,
-        title = "配色",
-        onDismiss = { showThemePicker = false },
-        options = listOf(
-            "默认（蓝）" to (settings.appTheme == AppTheme.Default),
-            "粉色" to (settings.appTheme == AppTheme.Pink),
-        ),
-        onPick = { index ->
-            showThemePicker = false
-            onUpdateSettings {
-                it.copy(appTheme = if (index == 0) AppTheme.Default else AppTheme.Pink)
-            }
-        },
-    )
-
-    PickerSheet(
-        show = showDarkPicker,
-        title = "深色模式",
-        onDismiss = { showDarkPicker = false },
-        options = listOf(
-            "跟随系统" to (settings.theme == ThemeMode.System),
-            "浅色" to (settings.theme == ThemeMode.Light),
-            "深色" to (settings.theme == ThemeMode.Dark),
-            "定时切换" to (settings.theme == ThemeMode.Scheduled),
-        ),
-        onPick = { index ->
-            showDarkPicker = false
-            val mode = when (index) {
-                0 -> ThemeMode.System
-                1 -> ThemeMode.Light
-                2 -> ThemeMode.Dark
-                else -> ThemeMode.Scheduled
-            }
-            if (mode == ThemeMode.Scheduled && !settings.hasSetScheduleTime) {
-                showTimeEdit = true
-            }
-            onUpdateSettings { it.copy(theme = mode) }
-        },
-    )
-
-    PickerSheet(
-        show = showHeaderPicker,
-        title = "顶栏显示",
-        onDismiss = { showHeaderPicker = false },
-        options = listOf(
-            "昵称（${profile.nickname}）" to (settings.headerDisplayMode == HeaderDisplayMode.Nickname),
-            "预算喵" to (settings.headerDisplayMode == HeaderDisplayMode.Meow),
-            "我的预算" to (settings.headerDisplayMode == HeaderDisplayMode.Default),
-            "自定义" to (settings.headerDisplayMode == HeaderDisplayMode.Custom),
-        ),
-        onPick = { index ->
-            showHeaderPicker = false
-            val mode = when (index) {
-                0 -> HeaderDisplayMode.Nickname
-                1 -> HeaderDisplayMode.Meow
-                2 -> HeaderDisplayMode.Default
-                else -> HeaderDisplayMode.Custom
-            }
-            onUpdateSettings { it.copy(headerDisplayMode = mode) }
-        },
-    )
 
     if (showRename) {
         InputDialog(
@@ -293,7 +436,7 @@ fun SettingsScreen(
         )
     }
 
-    if (showTimeEdit) {
+    if (showScheduleEditor) {
         InputDialog(
             show = true,
             title = "定时深色（开始时间）",
@@ -301,21 +444,18 @@ fun SettingsScreen(
             placeholder = "22:00",
             maxLength = 5,
             onConfirm = { start ->
-                showTimeEdit = false
+                showScheduleEditor = false
                 onUpdateSettings {
-                    it.copy(
-                        darkStartTime = start.ifBlank { "22:00" },
-                        hasSetScheduleTime = true,
-                    )
+                    it.copy(darkStartTime = start.ifBlank { "22:00" }, hasSetScheduleTime = true)
                 }
             },
-            onDismiss = { showTimeEdit = false },
+            onDismiss = { showScheduleEditor = false },
         )
     }
 
     ConfirmDialog(
         show = confirmClear,
-        title = "清空本月记录",
+        title = "清空历史记录",
         message = "本月所有流水会被删除，余额重置为初始预算。该操作不可撤销。",
         confirmText = "清空",
         destructive = true,
@@ -328,8 +468,8 @@ fun SettingsScreen(
 
     ConfirmDialog(
         show = confirmReset,
-        title = "重置全部数据",
-        message = "所有月份的账目、出行记录都会被清空。建议先导出备份。",
+        title = "清空全部数据",
+        message = "所有月份的账目、出行记录都会被清空。建议先备份数据。",
         confirmText = "全部清空",
         destructive = true,
         onConfirm = {
@@ -341,31 +481,100 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun PickerSheet(
-    show: Boolean,
+private fun MeowCollapsible(
     title: String,
-    onDismiss: () -> Unit,
-    options: List<Pair<String, Boolean>>,
-    onPick: (Int) -> Unit,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit,
 ) {
-    if (!show) return
-    OverlayBottomSheet(
-        show = show,
-        title = title,
-        onDismissRequest = onDismiss,
+    val rotation by animateFloatAsState(if (expanded) 90f else 0f, label = "chevron")
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        cornerRadius = 16.dp,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-            options.forEachIndexed { index, (label, checked) ->
-                MeowRow(
-                    title = label,
-                    summary = if (checked) "当前" else null,
-                    onClick = { onPick(index) },
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggle() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MiuixTheme.textStyles.body1,
+                    modifier = Modifier.weight(1f),
                 )
-                if (index != options.lastIndex) MeowDivider()
+                Icon(
+                    imageVector = MiuixIcons.Basic.ArrowRight,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    modifier = Modifier.rotate(rotation),
+                )
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column { content() }
             }
         }
     }
 }
+
+@Composable
+private fun MeowSegmented(
+    options: List<String>,
+    selectedIndex: Int,
+    enabled: Boolean = true,
+    onSelect: (Int) -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.surfaceVariant)
+            .padding(2.dp),
+    ) {
+        options.forEachIndexed { index, label ->
+            val selected = index == selectedIndex
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) colors.surface else Color.Transparent)
+                    .then(if (enabled) Modifier.clickable { onSelect(index) } else Modifier)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = when {
+                        !enabled -> colors.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                        selected -> colors.onSurface
+                        else -> colors.onSurfaceVariantSummary
+                    },
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeowPillButton(text: String, color: Color, onClick: () -> Unit) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote1,
+        color = Color.White,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(color)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    )
+}
+
+// ---------------------------------------------------------------- 账号页
 
 @Composable
 fun AccountScreen(
@@ -380,11 +589,7 @@ fun AccountScreen(
     var showCreate by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Profile?>(null) }
 
-    MeowPage(
-        title = "账号",
-        onBack = onBack,
-        snackbar = snackbar,
-    ) { padding ->
+    MeowPage(title = "账号", onBack = onBack, snackbar = snackbar) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -399,10 +604,7 @@ fun AccountScreen(
                 cornerRadius = 18.dp,
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "本机配置档",
-                        style = MiuixTheme.textStyles.headline2,
-                    )
+                    Text(text = "本机配置档", style = MiuixTheme.textStyles.headline2)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "每个配置档的账目完全隔离，等价于网页版的多账号。当前版本不联网，数据只存在这台设备上。",
@@ -412,7 +614,12 @@ fun AccountScreen(
                 }
             }
 
-            MeowSection(title = "配置档") {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                cornerRadius = 16.dp,
+            ) {
                 profiles.forEachIndexed { index, profile ->
                     MeowRow(
                         title = profile.nickname,
@@ -422,13 +629,6 @@ fun AccountScreen(
                             if (profile.id != activeId) onSwitch(profile.id)
                         },
                     )
-                    if (profile.id != activeId) {
-                        MeowRow(
-                            title = "删除这个配置档",
-                            summary = "连同它的账目一起删除",
-                            onClick = { pendingDelete = profile },
-                        )
-                    }
                     if (index != profiles.lastIndex) MeowDivider()
                 }
                 MeowDivider()
@@ -438,14 +638,29 @@ fun AccountScreen(
                     showArrow = true,
                     onClick = { showCreate = true },
                 )
+                if (profiles.size > 1) {
+                    val active = profiles.firstOrNull { it.id == activeId }
+                    if (active != null) {
+                        MeowDivider()
+                        MeowRow(
+                            title = "删除当前配置档",
+                            summary = "连同「${active.nickname}」的账目一起删除",
+                            onClick = { pendingDelete = active },
+                        )
+                    }
+                }
             }
 
-            MeowSection(title = "云端") {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                cornerRadius = 16.dp,
+            ) {
                 MeowRow(
                     title = "登录同步",
                     summary = "v2 计划：邮箱验证码登录 + Cloudflare 同步，已有数据会保留并做首次合并",
                     trailingText = "即将推出",
-                    onClick = { },
                 )
             }
         }

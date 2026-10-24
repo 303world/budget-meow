@@ -61,6 +61,7 @@ import io.github.world303.budgetmeow.core.model.formatMoney
 import io.github.world303.budgetmeow.core.model.round2
 import io.github.world303.budgetmeow.ui.component.ConfirmDialog
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
+import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -80,6 +81,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 @Composable
 fun CalculatorSheet(
+    glassEffect: Boolean,
     type: RecordType,
     balance: Double,
     initialBudget: Double,
@@ -126,13 +128,16 @@ fun CalculatorSheet(
     OverlayBottomSheet(
         show = true,
         title = ConfirmRules.title(type),
+        backgroundColor = if (glassEffect) Color.Transparent else MiuixTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .meowGlassSurface(RoundedCornerShape(26.dp), enabled = glassEffect, blurRadius = 30f)
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 12.dp),
+                .padding(top = 8.dp, bottom = 14.dp),
         ) {
             ExpressionDisplay(
                 state = state,

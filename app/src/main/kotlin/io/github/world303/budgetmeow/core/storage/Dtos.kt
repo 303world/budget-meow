@@ -95,6 +95,7 @@ data class SettingsDto(
     val showAvatarAsSettingsIcon: Boolean = false,
     val noKeepLogin: Boolean = false,
     val wallpaperPath: String? = null,
+    val fullScreen: Boolean = false,
 )
 
 @Serializable

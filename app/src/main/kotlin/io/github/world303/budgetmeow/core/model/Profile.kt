@@ -56,6 +56,7 @@ data class MeowSettings(
     val showAvatarAsSettingsIcon: Boolean = false,
     val noKeepLogin: Boolean = false,
     val wallpaperPath: String? = null,
+    val fullScreen: Boolean = false,
 )
 
 data class Profile(
@@ -81,6 +82,7 @@ fun SettingsDto.toDomain(): MeowSettings = MeowSettings(
     showAvatarAsSettingsIcon = showAvatarAsSettingsIcon,
     noKeepLogin = noKeepLogin,
     wallpaperPath = wallpaperPath,
+    fullScreen = fullScreen,
 )
 
 fun MeowSettings.toDto(): SettingsDto = SettingsDto(
@@ -98,6 +100,7 @@ fun MeowSettings.toDto(): SettingsDto = SettingsDto(
     showAvatarAsSettingsIcon = showAvatarAsSettingsIcon,
     noKeepLogin = noKeepLogin,
     wallpaperPath = wallpaperPath,
+    fullScreen = fullScreen,
 )
 
 fun ProfileDto.toDomain(): Profile = Profile(

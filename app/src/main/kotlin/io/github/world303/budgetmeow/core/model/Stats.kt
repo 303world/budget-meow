@@ -12,12 +12,19 @@ data class MonthStats(
 )
 
 /**
- * 月度统计口径，逐条对齐 Web 端 computeStatsFromRecords：
- * - 收入：income / carryover_income / advance / trip_income，以及 trip_end（出行余额结转回主账本）
- * - 支出：expense / trip_expense / carryover / advance_deduct / trip_start / trip_add
+ * 月度统计口径（相对网页版修正过）。
+ *
+ * 网页版把「出行划转」也算进收支：开启出行 300 记一笔支出，行程里花 120 又记一笔支出，
+ * 于是这个月支出变成 420，而实际只花了 120；结束出行的余额退回又记成收入。
+ * 预支、结转同理——它们是预算的搬运，不是当月的赚与花。
+ *
+ * 现在只统计真正的收支：
+ * - 收入：income / trip_income
+ * - 支出：expense / trip_expense
  * - 省钱：save
- * - init / adjust / debug 不进收支统计
- * - 每结束一次出行（trip_end）记一次出行次数
+ * - 出行次数：trip_end 的条数（含手动校准）
+ * 其余（init / adjust / debug / advance / advance_deduct / carryover / carryover_income /
+ * trip_start / trip_add / trip_end）都视为预算搬运，不进收支。
  */
 fun computeStats(records: List<BudgetRecord>): MonthStats {
     var income = 0.0
@@ -29,18 +36,15 @@ fun computeStats(records: List<BudgetRecord>): MonthStats {
     for (record in records) {
         val type = record.data.type
         val amount = abs(record.data.amount)
-        when {
-            type == RecordType.TripEnd -> {
-                income += amount
-                tripCount++
-            }
-            type.isIncomeLike -> income += amount
-            type == RecordType.TripExpense -> {
+        when (type) {
+            RecordType.Income, RecordType.TripIncome -> income += amount
+            RecordType.Expense -> expense += amount
+            RecordType.TripExpense -> {
                 expense += amount
                 tripExpense += amount
             }
-            type.isExpenseLike -> expense += amount
-            type == RecordType.Save -> saved += amount
+            RecordType.Save -> saved += amount
+            RecordType.TripEnd -> tripCount++
             else -> Unit
         }
     }

@@ -26,6 +26,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 const val APP_VERSION = "0.1.0"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
+const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
 
 private const val PRIVACY_TEXT = """预算喵是离线应用，这一版没有任何网络请求。
 
@@ -73,6 +74,26 @@ fun AboutScreen(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
+            }
+
+            MeowSection(title = "来源") {
+                MeowRow(
+                    title = "原网页版",
+                    summary = ORIGINAL_SITE_URL,
+                    showArrow = true,
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(ORIGINAL_SITE_URL)),
+                            )
+                        }
+                    },
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "从网页版迁移",
+                    summary = "网页版导出的 JSON 备份可直接在「设置 → 备份 → 恢复数据」导入",
+                )
             }
 
             MeowSection(title = "开源") {

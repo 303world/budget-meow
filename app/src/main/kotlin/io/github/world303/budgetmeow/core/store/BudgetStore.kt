@@ -750,6 +750,11 @@ class BudgetStore(
     }
 
     suspend fun clearAllRecords() = mutex.withLock {
+        // 出行进行中清空会导致主账本与出行子账本对不上，先让用户结束出行
+        if (dataset.activeTrip() != null) {
+            message("出行进行中，请先结束出行", MessageKind.Warning)
+            return@withLock
+        }
         val summary = dataset.summaryOf(currentMonth)
         val now = TimeUtil.nowIso()
         val remainingMonths = dataset.records.filter { it.data.month != currentMonth }
@@ -807,7 +812,7 @@ class BudgetStore(
             val absAmount = abs(data.amount)
             if (query.amountMin != null && absAmount < query.amountMin) return@filter false
             if (query.amountMax != null && absAmount > query.amountMax) return@filter false
-            val day = TimeUtil.isoDatePart(data.createdAt)
+            val day = TimeUtil.isoLocalDatePart(data.createdAt)
             if (!query.dateFrom.isNullOrBlank() && day < query.dateFrom) return@filter false
             if (!query.dateTo.isNullOrBlank() && day > query.dateTo) return@filter false
             true

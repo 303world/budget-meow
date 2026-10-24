@@ -48,6 +48,25 @@ class LocalStorage(val baseDir: File) {
         }.getOrNull()
     }
 
+    // ---------- 壁纸 ----------
+
+    private fun wallpaperFile(): File = File(baseDir, "wallpapers/wallpaper.png")
+
+    fun wallpaperPath(): String? = wallpaperFile().takeIf { it.exists() }?.absolutePath
+
+    suspend fun setWallpaper(source: File): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val target = wallpaperFile()
+            target.parentFile?.mkdirs()
+            source.copyTo(target, overwrite = true)
+            target.absolutePath
+        }.getOrNull()
+    }
+
+    suspend fun clearWallpaper() = withContext(Dispatchers.IO) {
+        wallpaperFile().delete()
+    }
+
     // ---------- 配置档索引 ----------
 
     suspend fun loadIndex(): ProfileIndexDto = readJson(indexFile, ProfileIndexDto.serializer(), ProfileIndexDto())

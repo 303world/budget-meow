@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +51,10 @@ import io.github.world303.budgetmeow.ui.component.ConfirmDialog
 import io.github.world303.budgetmeow.ui.component.InputDialog
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowRow
+import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
+import io.github.world303.budgetmeow.ui.theme.MeowWallpaperBackground
+import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -74,6 +78,7 @@ import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.Instant
 import java.time.ZoneId
@@ -129,9 +134,23 @@ fun HomeScreen(
         ?: state.activeTrip?.let { "${tripMonth(it.data.createdAt)}出行" }
         ?: "出行"
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-    ) { padding ->
+    val backdrop = LocalMeowBackdrop.current
+    val glass = settings.glassEffect
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        MeowWallpaperBackground(
+            wallpaperPath = settings.wallpaperPath,
+            glassEnabled = glass,
+            modifier = if (backdrop != null) {
+                Modifier.fillMaxSize().layerBackdrop(backdrop)
+            } else {
+                Modifier.fillMaxSize()
+            },
+        )
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbar) },
+        ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -155,6 +174,7 @@ fun HomeScreen(
                 HeaderPill(
                     text = if (isTripMode) tripName else headerText,
                     showChevron = state.activeTrip != null,
+                    glass = glass,
                     onClick = {
                         if (state.activeTrip != null) showTripSwitch = true
                     },
@@ -245,29 +265,29 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (isTripMode && state.activeTrip != null) {
-                    QuickAction("收入", Modifier.weight(1f), { PlusMinusIcon(true, MeowPalette.Green) }) {
+                    QuickAction("收入", Modifier.weight(1f), glass, { PlusMinusIcon(true, MeowPalette.Green) }) {
                         calcType = RecordType.TripIncome
                     }
-                    QuickAction("支出", Modifier.weight(1f), { PlusMinusIcon(false, MeowPalette.Red) }) {
+                    QuickAction("支出", Modifier.weight(1f), glass, { PlusMinusIcon(false, MeowPalette.Red) }) {
                         calcType = RecordType.TripExpense
                     }
-                    QuickAction("增加", Modifier.weight(1f), { Icon(MiuixIcons.AddCircle, "增加", tint = MeowPalette.Blue) }) {
+                    QuickAction("增加", Modifier.weight(1f), glass, { Icon(MiuixIcons.AddCircle, "增加", tint = MeowPalette.Blue) }) {
                         calcType = RecordType.TripAdd
                     }
-                    QuickAction("结束", Modifier.weight(1f), { Icon(MiuixIcons.Ok, "结束", tint = MeowPalette.Purple) }) {
+                    QuickAction("结束", Modifier.weight(1f), glass, { Icon(MiuixIcons.Ok, "结束", tint = MeowPalette.Purple) }) {
                         confirmEndTrip = true
                     }
                 } else {
-                    QuickAction("收入", Modifier.weight(1f), { PlusMinusIcon(true, MeowPalette.Green) }) {
+                    QuickAction("收入", Modifier.weight(1f), glass, { PlusMinusIcon(true, MeowPalette.Green) }) {
                         calcType = RecordType.Income
                     }
-                    QuickAction("支出", Modifier.weight(1f), { PlusMinusIcon(false, MeowPalette.Red) }) {
+                    QuickAction("支出", Modifier.weight(1f), glass, { PlusMinusIcon(false, MeowPalette.Red) }) {
                         calcType = RecordType.Expense
                     }
-                    QuickAction("省钱", Modifier.weight(1f), { Icon(MiuixIcons.Favorites, "省钱", tint = MeowPalette.Blue) }) {
+                    QuickAction("省钱", Modifier.weight(1f), glass, { Icon(MiuixIcons.Favorites, "省钱", tint = MeowPalette.Blue) }) {
                         calcType = RecordType.Save
                     }
-                    QuickAction("更多", Modifier.weight(1f), {
+                    QuickAction("更多", Modifier.weight(1f), glass, {
                         Icon(
                             MiuixIcons.More,
                             "更多",
@@ -278,6 +298,7 @@ fun HomeScreen(
                     }
                 }
             }
+        }
         }
     }
 
@@ -363,6 +384,7 @@ fun HomeScreen(
     val type = calcType
     if (type != null) {
         CalculatorSheet(
+            glassEffect = glass,
             type = type,
             balance = state.balance,
             initialBudget = state.initialBudget,
@@ -444,18 +466,19 @@ private fun tripMonth(iso: String): Int = runCatching {
 private fun HeaderPill(
     text: String,
     showChevron: Boolean,
+    glass: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    Card(
+    Box(
         modifier = Modifier
+            .meowGlassSurface(RoundedCornerShape(22.dp), enabled = glass, blurRadius = 22f)
             .pointerInput(text) {
                 detectTapGestures(
                     onTap = { onClick() },
                     onLongPress = { onLongClick() },
                 )
             },
-        cornerRadius = 22.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
@@ -500,10 +523,15 @@ private fun BigMoney(amount: Double, color: Color = Color.Unspecified) {
 private fun QuickAction(
     label: String,
     modifier: Modifier = Modifier,
+    glass: Boolean = false,
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
 ) {
-    Card(modifier = modifier, onClick = onClick, cornerRadius = 18.dp) {
+    Box(
+        modifier = modifier
+            .meowGlassSurface(RoundedCornerShape(18.dp), enabled = glass, blurRadius = 20f)
+            .clickable(onClick = onClick),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

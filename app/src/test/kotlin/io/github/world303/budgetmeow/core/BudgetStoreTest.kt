@@ -45,7 +45,7 @@ class StatsTest {
     )
 
     @Test
-    fun `统计口径与 Web 端一致`() {
+    fun `统计只算真实收支，出行划转不算`() {
         val records = listOf(
             record(RecordType.Init, 3000.0),
             record(RecordType.Income, 100.0),
@@ -59,15 +59,13 @@ class StatsTest {
             record(RecordType.Adjust, 0.0),
         )
         val stats = computeStats(records)
-        // 收入: 100 + 40(预支) + 130(出行结转) = 270
-        assertEquals(270.0, stats.income, 1e-9)
-        // 支出: 50 + 20(结转) + 200(开启出行) + 70(出行支出) = 340
-        assertEquals(340.0, stats.expense, 1e-9)
+        // 网页版会把 trip_start/trip_end/carryover/advance 也算进收支，导致重复计数
+        assertEquals(100.0, stats.income, 1e-9)
+        assertEquals(120.0, stats.expense, 1e-9)
         assertEquals(30.0, stats.saved, 1e-9)
         assertEquals(70.0, stats.tripExpense, 1e-9)
         assertEquals(1, stats.tripCount)
-        // 净支出 = 支出 - 收入
-        assertEquals(70.0, stats.netExpense, 1e-9)
+        assertEquals(20.0, stats.netExpense, 1e-9)
     }
 }
 
