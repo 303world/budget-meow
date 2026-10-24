@@ -74,4 +74,7 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
 }

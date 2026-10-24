@@ -6,6 +6,7 @@ compose = "1.12.1"
 activityCompose = "1.13.0"
 coroutines = "1.11.0"
 serialization = "1.12.0"
+junit = "4.13.2"
 coreKtx = "1.19.0"
 
 [libraries]
@@ -21,6 +22,8 @@ activity-compose = { module = "androidx.activity:activity-compose", version.ref 
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+junit = { module = "junit:junit", version.ref = "junit" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
