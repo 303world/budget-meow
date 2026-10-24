@@ -15,32 +15,32 @@ class ExpressionParserTest {
 
     @Test
     fun `四则运算优先级`() {
-        assertEquals(7.0, ExpressionParser.evaluate("1+2*3"), 1e-9)
-        assertEquals(9.0, ExpressionParser.evaluate("(1+2)*3"), 1e-9)
-        assertEquals(2.5, ExpressionParser.evaluate("10/4"), 1e-9)
-        assertEquals(6.0, ExpressionParser.evaluate("10-4"), 1e-9)
+        assertEquals(7.0, ExpressionParser.evaluate("1+2*3")!!, 1e-9)
+        assertEquals(9.0, ExpressionParser.evaluate("(1+2)*3")!!, 1e-9)
+        assertEquals(2.5, ExpressionParser.evaluate("10/4")!!, 1e-9)
+        assertEquals(6.0, ExpressionParser.evaluate("10-4")!!, 1e-9)
     }
 
     @Test
     fun `支持全角乘除号`() {
-        assertEquals(12.0, ExpressionParser.evaluate("3×4"), 1e-9)
-        assertEquals(3.0, ExpressionParser.evaluate("12÷4"), 1e-9)
+        assertEquals(12.0, ExpressionParser.evaluate("3×4")!!, 1e-9)
+        assertEquals(3.0, ExpressionParser.evaluate("12÷4")!!, 1e-9)
     }
 
     @Test
     fun `负数与一元运算`() {
-        assertEquals(-5.0, ExpressionParser.evaluate("-5"), 1e-9)
-        assertEquals(3.0, ExpressionParser.evaluate("2-(-1)"), 1e-9)
-        assertEquals(-6.0, ExpressionParser.evaluate("2*-3"), 1e-9)
+        assertEquals(-5.0, ExpressionParser.evaluate("-5")!!, 1e-9)
+        assertEquals(3.0, ExpressionParser.evaluate("2-(-1)")!!, 1e-9)
+        assertEquals(-6.0, ExpressionParser.evaluate("2*-3")!!, 1e-9)
     }
 
     @Test
     fun `非法输入返回 null`() {
-        assertNull(ExpressionParser.evaluate("1+"))
-        assertNull(ExpressionParser.evaluate("abc"))
-        assertNull(ExpressionParser.evaluate("()"))
-        assertNull(ExpressionParser.evaluate("1 2"))
-        assertNull(ExpressionParser.evaluate("2/0"))
+        assertNull(ExpressionParser.evaluate("1+")!!)
+        assertNull(ExpressionParser.evaluate("abc")!!)
+        assertNull(ExpressionParser.evaluate("()")!!)
+        assertNull(ExpressionParser.evaluate("1 2")!!)
+        assertNull(ExpressionParser.evaluate("2/0")!!)
     }
 
     @Test
