@@ -33,7 +33,9 @@ android {
             signingConfig = signingConfigs.getByName("ci")
         }
         release {
-            isMinifyEnabled = false
+            // 不开 R8 的话，Miuix 整套图标（几百个 ImageVector）会全打进包里，dex 25MB
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("ci")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
