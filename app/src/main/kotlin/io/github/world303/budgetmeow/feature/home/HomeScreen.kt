@@ -245,29 +245,35 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (isTripMode && state.activeTrip != null) {
-                    QuickAction(MiuixIcons.Add, "收入", MeowPalette.Green, Modifier.weight(1f)) {
+                    QuickAction("收入", Modifier.weight(1f), { PlusMinusIcon(true, MeowPalette.Green) }) {
                         calcType = RecordType.TripIncome
                     }
-                    QuickAction(MiuixIcons.Remove, "支出", MeowPalette.Red, Modifier.weight(1f)) {
+                    QuickAction("支出", Modifier.weight(1f), { PlusMinusIcon(false, MeowPalette.Red) }) {
                         calcType = RecordType.TripExpense
                     }
-                    QuickAction(MiuixIcons.AddCircle, "增加", MeowPalette.Blue, Modifier.weight(1f)) {
+                    QuickAction("增加", Modifier.weight(1f), { Icon(MiuixIcons.AddCircle, "增加", tint = MeowPalette.Blue) }) {
                         calcType = RecordType.TripAdd
                     }
-                    QuickAction(MiuixIcons.Ok, "结束", MeowPalette.Purple, Modifier.weight(1f)) {
+                    QuickAction("结束", Modifier.weight(1f), { Icon(MiuixIcons.Ok, "结束", tint = MeowPalette.Purple) }) {
                         confirmEndTrip = true
                     }
                 } else {
-                    QuickAction(MiuixIcons.Add, "收入", MeowPalette.Green, Modifier.weight(1f)) {
+                    QuickAction("收入", Modifier.weight(1f), { PlusMinusIcon(true, MeowPalette.Green) }) {
                         calcType = RecordType.Income
                     }
-                    QuickAction(MiuixIcons.Remove, "支出", MeowPalette.Red, Modifier.weight(1f)) {
+                    QuickAction("支出", Modifier.weight(1f), { PlusMinusIcon(false, MeowPalette.Red) }) {
                         calcType = RecordType.Expense
                     }
-                    QuickAction(MiuixIcons.Favorites, "省钱", MeowPalette.Blue, Modifier.weight(1f)) {
+                    QuickAction("省钱", Modifier.weight(1f), { Icon(MiuixIcons.Favorites, "省钱", tint = MeowPalette.Blue) }) {
                         calcType = RecordType.Save
                     }
-                    QuickAction(MiuixIcons.More, "更多", MiuixTheme.colorScheme.onSurfaceVariantSummary, Modifier.weight(1f)) {
+                    QuickAction("更多", Modifier.weight(1f), {
+                        Icon(
+                            MiuixIcons.More,
+                            "更多",
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }) {
                         showMoreMenu = true
                     }
                 }
@@ -492,10 +498,9 @@ private fun BigMoney(amount: Double, color: Color = Color.Unspecified) {
 
 @Composable
 private fun QuickAction(
-    icon: ImageVector,
     label: String,
-    iconColor: Color,
     modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
     onClick: () -> Unit,
 ) {
     Card(modifier = modifier, onClick = onClick, cornerRadius = 18.dp) {
@@ -505,12 +510,35 @@ private fun QuickAction(
                 .padding(vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(imageVector = icon, contentDescription = label, tint = iconColor)
+            icon()
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = label,
                 style = MiuixTheme.textStyles.footnote1,
                 textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlusMinusIcon(plus: Boolean, color: Color) {
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(24.dp)) {
+        val stroke = 2.4.dp.toPx()
+        drawLine(
+            color = color,
+            start = androidx.compose.ui.geometry.Offset(size.width * 0.2f, size.height / 2),
+            end = androidx.compose.ui.geometry.Offset(size.width * 0.8f, size.height / 2),
+            strokeWidth = stroke,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+        )
+        if (plus) {
+            drawLine(
+                color = color,
+                start = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.2f),
+                end = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.8f),
+                strokeWidth = stroke,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
             )
         }
     }

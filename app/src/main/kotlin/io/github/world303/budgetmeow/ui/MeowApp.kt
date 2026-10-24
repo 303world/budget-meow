@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -173,8 +175,13 @@ fun MeowApp(container: AppContainer) {
     var editBudget by remember { mutableStateOf(false) }
 
     MeowTheme(settings = profile.settings, darkOverride = darkOverride) {
-        Box(modifier = Modifier.fillMaxSize()) {
-        when (stack.last()) {
+        // 根 Scaffold 只做弹层宿主：内边距清零，不影响各页面自己的 Scaffold
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            containerColor = MiuixTheme.colorScheme.background,
+        ) { _ ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (stack.last()) {
             Screen.Home -> HomeScreen(
                 store = store,
                 profile = profile,
@@ -260,10 +267,10 @@ fun MeowApp(container: AppContainer) {
                 snackbar = snackbar,
             )
 
-            else -> Unit
-        }
+                    else -> Unit
+                }
 
-        if (editBudget) {
+                if (editBudget) {
             InputDialog(
                 show = true,
                 title = "修改本月预算",
@@ -280,9 +287,10 @@ fun MeowApp(container: AppContainer) {
                         scope.launch { snackbar.showSnackbar("请输入大于 0 的金额") }
                     }
                 },
-                onDismiss = { editBudget = false },
-            )
-        }
+                    onDismiss = { editBudget = false },
+                )
+            }
+            }
         }
     }
 }
