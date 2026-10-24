@@ -23,7 +23,7 @@ object MeowPalette {
     val Blue = Color(0xFF007AFF)
     val Orange = Color(0xFFFF9500)
     val Purple = Color(0xFFAF52DE)
-    private val PinkSeed = Color(0xFFE91E63)
+    val PinkSeed = Color(0xFFE91E63)
 }
 
 fun parseClock(text: String): LocalTime? =
