@@ -274,6 +274,14 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                         container.settings.updateSettings { it.copy(headerDisplayMode = mode) }
                     }
                 },
+                cloudLoggedIn = syncState.loggedIn,
+                onSyncNow = {
+                    scope.launch {
+                        container.sync.sync(profile.id)
+                            .onSuccess { snackbar.showSnackbar(it) }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                    }
+                },
                 snackbar = snackbar,
             )
 

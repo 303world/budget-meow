@@ -99,6 +99,8 @@ fun HomeScreen(
     onOpenStats: () -> Unit,
     onOpenSettings: () -> Unit,
     onHeaderModeChange: (HeaderDisplayMode) -> Unit,
+    cloudLoggedIn: Boolean,
+    onSyncNow: () -> Unit,
     snackbar: SnackbarHostState,
 ) {
     val state by store.state.collectAsState()
@@ -338,6 +340,13 @@ fun HomeScreen(
             showMoreMenu = false
             onOpenSearch()
         })
+        if (cloudLoggedIn) {
+            MeowDivider()
+            MeowRow("立即同步", "与云端合并一次", onClick = {
+                showMoreMenu = false
+                onSyncNow()
+            })
+        }
     }
 
     MenuSheet(show = showHeaderMenu, title = "顶栏显示", onDismiss = { showHeaderMenu = false }) {
