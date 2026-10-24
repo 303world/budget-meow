@@ -987,7 +987,13 @@ class BudgetStore(
     suspend fun snapshot(): BudgetDataset = mutex.withLock { dataset }
 
     suspend fun importDataset(newDataset: BudgetDataset) = mutex.withLock {
-        dataset = newDataset
+        // 另一台设备的 profileId 与本机不同，导入时统一归一到当前档，避免同一个账本里混着两个 userId
+        dataset = newDataset.copy(
+            summaries = newDataset.summaries.map { it.copy(data = it.data.copy(userId = profileId)) },
+            records = newDataset.records.map { it.copy(data = it.data.copy(userId = profileId)) },
+            trips = newDataset.trips.map { it.copy(data = it.data.copy(userId = profileId)) },
+            tripRecords = newDataset.tripRecords.map { it.copy(data = it.data.copy(userId = profileId)) },
+        )
         loadedPages = 1
         persist()
     }

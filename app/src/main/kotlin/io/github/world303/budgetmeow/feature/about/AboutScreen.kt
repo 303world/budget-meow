@@ -24,7 +24,7 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-const val APP_VERSION = "1.0.0"
+const val APP_VERSION = "1.1.0"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
 const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
 
