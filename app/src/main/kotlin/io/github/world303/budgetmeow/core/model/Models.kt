@@ -92,6 +92,7 @@ data class BudgetSummaryData(
     val tripCountOverride: Double? = null,
     val tripEndCountAtCalibration: Double? = null,
     val lastUpdatedAt: String,
+    val deleted: Boolean = false,
 )
 
 data class BudgetSummary(val id: String, val data: BudgetSummaryData)
@@ -103,6 +104,10 @@ data class BudgetRecordData(
     val amount: Double,
     val note: String,
     val createdAt: String,
+    /** 同步用的版本戳；老数据默认等于 createdAt */
+    val updatedAt: String = createdAt,
+    /** 墓碑：删除不真删，打标记才能同步到其它设备 */
+    val deleted: Boolean = false,
 )
 
 data class BudgetRecord(val id: String, val data: BudgetRecordData) {
@@ -118,6 +123,8 @@ data class TripSummaryData(
     val startRecordId: String? = null,
     val createdAt: String,
     val endedAt: String? = null,
+    val updatedAt: String = createdAt,
+    val deleted: Boolean = false,
 )
 
 data class TripSummary(val id: String, val data: TripSummaryData)
@@ -129,6 +136,8 @@ data class TripRecordData(
     val amount: Double,
     val note: String,
     val createdAt: String,
+    val updatedAt: String = createdAt,
+    val deleted: Boolean = false,
 )
 
 data class TripRecord(val id: String, val data: TripRecordData)
@@ -142,15 +151,22 @@ data class BudgetDataset(
     val trips: List<TripSummary> = emptyList(),
     val tripRecords: List<TripRecord> = emptyList(),
 ) {
-    fun summaryOf(month: String): BudgetSummary? = summaries.firstOrNull { it.data.month == month }
+    fun summaryOf(month: String): BudgetSummary? =
+        summaries.firstOrNull { it.data.month == month && !it.data.deleted }
 
     fun recordsOf(month: String): List<BudgetRecord> =
-        records.filter { it.data.month == month }.sortedByDescending { it.data.createdAt }
+        records.filter { it.data.month == month && !it.data.deleted }
+            .sortedByDescending { it.data.createdAt }
 
-    fun activeTrip(): TripSummary? = trips.firstOrNull { it.data.status == TripStatus.Active }
+    fun activeTrip(): TripSummary? =
+        trips.firstOrNull { it.data.status == TripStatus.Active && !it.data.deleted }
 
     fun tripRecordsOf(tripId: String): List<TripRecord> =
-        tripRecords.filter { it.data.tripId == tripId }.sortedByDescending { it.data.createdAt }
+        tripRecords.filter { it.data.tripId == tripId && !it.data.deleted }
+            .sortedByDescending { it.data.createdAt }
+
+    /** 参与同步的全部实体（含墓碑），对比与推送都用它 */
+    fun liveOrTombstone(): BudgetDataset = this
 }
 
 /** 月份键，形如 2026-10，按本地时区计算（与 Web 端 date-fns 的行为一致） */

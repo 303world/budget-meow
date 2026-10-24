@@ -16,8 +16,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -40,24 +42,34 @@ fun Modifier.meowGlassSurface(
     tintColor: Color = MiuixTheme.colorScheme.surfaceContainer,
 ): Modifier {
     if (!enabled) return background(tintColor, shape).clip(shape)
+
     val backdrop = LocalMeowBackdrop.current
     val supported = rememberBlurSupported()
+    val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
+
     if (backdrop == null || !supported) {
-        // 降级：半透明玻璃色，仍有层次但不会糊背景
-        return background(tintColor.copy(alpha = 0.92f), shape).clip(shape)
+        // 降级：没有 RuntimeShader 时用半透明玻璃色，仍然保留圆角与层次
+        return background(tintColor.copy(alpha = if (dark) 0.55f else 0.72f), shape).clip(shape)
     }
+
+    // 液态玻璃的三件事：背景真模糊 + 一层很淡的着色 + 受光描边。
+    // 着色别下重手，否则壁纸就被盖成一块死板的色块（第一版犯过这个错）。
     return this
         .textureBlur(
             backdrop = backdrop,
             shape = shape,
             blurRadius = blurRadius,
-            noiseCoefficient = 0.006f,
+            noiseCoefficient = 0.008f,
             colors = BlurColors(
-                brightness = 0.02f,
-                saturation = 1.06f,
+                blendColors = listOf(
+                    BlendColorEntry(tintColor.copy(alpha = if (dark) 0.30f else 0.52f)),
+                ),
+                brightness = if (dark) 0.05f else 0.04f,
+                contrast = 1.02f,
+                saturation = 1.18f,
             ),
+            highlight = if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight,
         )
-        .background(tintColor.copy(alpha = 0.42f), shape)
         .clip(shape)
 }
 

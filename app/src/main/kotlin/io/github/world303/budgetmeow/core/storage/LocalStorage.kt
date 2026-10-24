@@ -100,6 +100,14 @@ class LocalStorage(val baseDir: File) {
         File(baseDir, "avatars/$profileId").deleteRecursively()
     }
 
+    // ---------- 同步用编解码 ----------
+
+    fun encodeDataset(dataset: BudgetDataset): String =
+        json.encodeToString(BudgetFileDto.serializer(), dataset.toDto())
+
+    fun decodeDataset(text: String): BudgetDataset? =
+        runCatching { json.decodeFromString(BudgetFileDto.serializer(), text).toDomain() }.getOrNull()
+
     /** 导出备份时临时落盘用 */
     fun exportDir(): File = File(baseDir, "exports").apply { mkdirs() }
 

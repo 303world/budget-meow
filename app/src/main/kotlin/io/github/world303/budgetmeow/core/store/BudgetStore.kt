@@ -332,7 +332,16 @@ class BudgetStore(
                 RecordType.TripAdd, -amount, TRIP_TAG_FORMAT.format(prefix) + "增加出行预算", now,
             ),
             trips = dataset.trips.map {
-                if (it.id == trip.id) it.copy(data = it.data.copy(balance = (it.data.balance + amount).round2())) else it
+                if (it.id == trip.id) {
+                    it.copy(
+                        data = it.data.copy(
+                            balance = (it.data.balance + amount).round2(),
+                            updatedAt = now,
+                        ),
+                    )
+                } else {
+                    it
+                }
             },
             tripRecords = dataset.tripRecords + TripRecord(
                 id = Ids.newId(),
@@ -372,7 +381,16 @@ class BudgetStore(
                 now,
             ),
             trips = dataset.trips.map {
-                if (it.id == trip.id) it.copy(data = it.data.copy(balance = (it.data.balance + signed).round2())) else it
+                if (it.id == trip.id) {
+                    it.copy(
+                        data = it.data.copy(
+                            balance = (it.data.balance + signed).round2(),
+                            updatedAt = now,
+                        ),
+                    )
+                } else {
+                    it
+                }
             },
             tripRecords = dataset.tripRecords + TripRecord(
                 id = Ids.newId(),
@@ -428,9 +446,23 @@ class BudgetStore(
                         it
                     }
                 },
-                records = dataset.records.filterNot { it.id in recordIdsToDelete },
-                trips = dataset.trips.filterNot { it.id == trip.id },
-                tripRecords = dataset.tripRecords.filterNot { it.data.tripId == trip.id },
+                records = dataset.records.map {
+                    if (it.id in recordIdsToDelete) {
+                        it.copy(data = it.data.copy(deleted = true, updatedAt = now))
+                    } else {
+                        it
+                    }
+                },
+                trips = dataset.trips.map {
+                    if (it.id == trip.id) it.copy(data = it.data.copy(deleted = true, updatedAt = now)) else it
+                },
+                tripRecords = dataset.tripRecords.map {
+                    if (it.data.tripId == trip.id) {
+                        it.copy(data = it.data.copy(deleted = true, updatedAt = now))
+                    } else {
+                        it
+                    }
+                },
             )
             persist()
             message("本次未出行，已清理相关记录", MessageKind.Info)
@@ -455,7 +487,14 @@ class BudgetStore(
             ),
             trips = dataset.trips.map {
                 if (it.id == trip.id) {
-                    it.copy(data = it.data.copy(status = TripStatus.Ended, balance = 0.0, endedAt = now))
+                    it.copy(
+                        data = it.data.copy(
+                            status = TripStatus.Ended,
+                            balance = 0.0,
+                            endedAt = now,
+                            updatedAt = now,
+                        ),
+                    )
                 } else {
                     it
                 }
@@ -479,7 +518,11 @@ class BudgetStore(
 
         dataset = dataset.copy(
             trips = dataset.trips.map {
-                if (it.id == trip.id) it.copy(data = it.data.copy(tripName = newName)) else it
+                if (it.id == trip.id) {
+                    it.copy(data = it.data.copy(tripName = newName, updatedAt = TimeUtil.nowIso()))
+                } else {
+                    it
+                }
             },
             records = if (oldTag == newTag) {
                 dataset.records
@@ -527,6 +570,7 @@ class BudgetStore(
         var tripRecords = dataset.tripRecords
         val amount = record.data.amount
         val activeTrip = dataset.activeTrip()
+        val stamp = TimeUtil.nowIso()
 
         when (record.data.type) {
             RecordType.Income, RecordType.Expense -> data = data.copy(
@@ -553,10 +597,15 @@ class BudgetStore(
                         it
                     }
                 }
-                tripRecords = tripRecords.filterNot {
-                    it.data.tripId == activeTrip.id &&
+                tripRecords = tripRecords.map {
+                    if (it.data.tripId == activeTrip.id &&
                         it.data.type == TripRecordType.Add &&
                         it.data.createdAt == record.data.createdAt
+                    ) {
+                        it.copy(data = it.data.copy(deleted = true, updatedAt = stamp))
+                    } else {
+                        it
+                    }
                 }
             }
             RecordType.TripIncome, RecordType.TripExpense -> if (activeTrip != null) {
@@ -570,19 +619,27 @@ class BudgetStore(
                 }
                 val targetType =
                     if (record.data.type == RecordType.TripIncome) TripRecordType.Income else TripRecordType.Expense
-                tripRecords = tripRecords.filterNot {
-                    it.data.tripId == activeTrip.id &&
+                tripRecords = tripRecords.map {
+                    if (it.data.tripId == activeTrip.id &&
                         it.data.type == targetType &&
                         it.data.createdAt == record.data.createdAt
+                    ) {
+                        it.copy(data = it.data.copy(deleted = true, updatedAt = stamp))
+                    } else {
+                        it
+                    }
                 }
             }
             else -> Unit
         }
 
-        data = data.copy(lastUpdatedAt = TimeUtil.nowIso())
+        val now = TimeUtil.nowIso()
+        data = data.copy(lastUpdatedAt = now)
         dataset = dataset.copy(
             summaries = dataset.summaries.map { if (it.id == summary.id) it.copy(data = data) else it },
-            records = dataset.records.filterNot { it.id == record.id },
+            records = dataset.records.map {
+                if (it.id == record.id) it.copy(data = it.data.copy(deleted = true, updatedAt = now)) else it
+            },
             trips = trips,
             tripRecords = tripRecords,
         )
@@ -593,7 +650,12 @@ class BudgetStore(
     suspend fun batchDelete(records: List<BudgetRecord>) = mutex.withLock {
         if (records.isEmpty()) return@withLock
         val ids = records.map { it.id }.toSet()
-        dataset = dataset.copy(records = dataset.records.filterNot { it.id in ids })
+        val now = TimeUtil.nowIso()
+        dataset = dataset.copy(
+            records = dataset.records.map {
+                if (it.id in ids) it.copy(data = it.data.copy(deleted = true, updatedAt = now)) else it
+            },
+        )
         persist()
         message("已删除 ${records.size} 条记录", MessageKind.Success)
     }
@@ -604,6 +666,7 @@ class BudgetStore(
         var trips = dataset.trips
         var tripRecords = dataset.tripRecords
         val deletedIds = mutableSetOf<String>()
+        val loopStamp = TimeUtil.nowIso()
         var success = 0
         var failed = 0
 
@@ -639,10 +702,15 @@ class BudgetStore(
                             it
                         }
                     }
-                    tripRecords = tripRecords.filterNot {
-                        it.data.tripId == activeTrip.id &&
+                    tripRecords = tripRecords.map {
+                        if (it.data.tripId == activeTrip.id &&
                             it.data.type == TripRecordType.Add &&
                             it.data.createdAt == record.data.createdAt
+                        ) {
+                            it.copy(data = it.data.copy(deleted = true, updatedAt = loopStamp))
+                        } else {
+                            it
+                        }
                     }
                 }
                 RecordType.TripIncome, RecordType.TripExpense -> if (activeTrip != null) {
@@ -656,10 +724,15 @@ class BudgetStore(
                     }
                     val targetType =
                         if (record.data.type == RecordType.TripIncome) TripRecordType.Income else TripRecordType.Expense
-                    tripRecords = tripRecords.filterNot {
-                        it.data.tripId == activeTrip.id &&
+                    tripRecords = tripRecords.map {
+                        if (it.data.tripId == activeTrip.id &&
                             it.data.type == targetType &&
                             it.data.createdAt == record.data.createdAt
+                        ) {
+                            it.copy(data = it.data.copy(deleted = true, updatedAt = loopStamp))
+                        } else {
+                            it
+                        }
                     }
                 }
                 else -> Unit
@@ -668,10 +741,13 @@ class BudgetStore(
             success++
         }
 
-        data = data.copy(lastUpdatedAt = TimeUtil.nowIso())
+        val now = TimeUtil.nowIso()
+        data = data.copy(lastUpdatedAt = now)
         dataset = dataset.copy(
             summaries = dataset.summaries.map { if (it.id == summary.id) it.copy(data = data) else it },
-            records = dataset.records.filterNot { it.id in deletedIds },
+            records = dataset.records.map {
+                if (it.id in deletedIds) it.copy(data = it.data.copy(deleted = true, updatedAt = now)) else it
+            },
             trips = trips,
             tripRecords = tripRecords,
         )
@@ -683,9 +759,14 @@ class BudgetStore(
     }
 
     suspend fun updateRecordNote(record: BudgetRecord, note: String) = mutex.withLock {
+        val now = TimeUtil.nowIso()
         dataset = dataset.copy(
             records = dataset.records.map {
-                if (it.id == record.id) it.copy(data = it.data.copy(note = note.take(50))) else it
+                if (it.id == record.id) {
+                    it.copy(data = it.data.copy(note = note.take(50), updatedAt = now))
+                } else {
+                    it
+                }
             },
         )
         persist()
@@ -757,7 +838,13 @@ class BudgetStore(
         }
         val summary = dataset.summaryOf(currentMonth)
         val now = TimeUtil.nowIso()
-        val remainingMonths = dataset.records.filter { it.data.month != currentMonth }
+        val tombstoned = dataset.records.map {
+            if (it.data.month == currentMonth && !it.data.deleted) {
+                it.copy(data = it.data.copy(deleted = true, updatedAt = now))
+            } else {
+                it
+            }
+        }
         if (summary != null) {
             val initial = summary.data.initialBudget
             dataset = dataset.copy(
@@ -776,17 +863,25 @@ class BudgetStore(
                         it
                     }
                 },
-                records = remainingMonths + newRecord(RecordType.Init, initial, "初始预算（清空记录后重建）", now),
+                records = tombstoned + newRecord(RecordType.Init, initial, "初始预算（清空记录后重建）", now),
             )
         } else {
-            dataset = dataset.copy(records = remainingMonths)
+            dataset = dataset.copy(records = tombstoned)
         }
         persist()
         message("历史记录已清空，余额已重置为初始预算", MessageKind.Success)
     }
 
     suspend fun resetAccount() = mutex.withLock {
-        dataset = BudgetDataset()
+        val now = TimeUtil.nowIso()
+        dataset = dataset.copy(
+            summaries = dataset.summaries.map { it.copy(data = it.data.copy(deleted = true, lastUpdatedAt = now)) },
+            records = dataset.records.map { it.copy(data = it.data.copy(deleted = true, updatedAt = now)) },
+            trips = dataset.trips.map { it.copy(data = it.data.copy(deleted = true, updatedAt = now)) },
+            tripRecords = dataset.tripRecords.map {
+                it.copy(data = it.data.copy(deleted = true, updatedAt = now))
+            },
+        )
         persist()
         message("数据已清空", MessageKind.Success)
     }

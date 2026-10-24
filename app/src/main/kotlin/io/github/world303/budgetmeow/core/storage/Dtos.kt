@@ -42,6 +42,7 @@ data class SummaryDto(
     val tripCountOverride: Double? = null,
     val tripEndCountAtCalibration: Double? = null,
     val lastUpdatedAt: String,
+    val deleted: Boolean = false,
 )
 
 @Serializable
@@ -53,6 +54,8 @@ data class RecordDto(
     val amount: Double,
     val note: String = "",
     val createdAt: String,
+    val updatedAt: String? = null,
+    val deleted: Boolean = false,
 )
 
 @Serializable
@@ -66,6 +69,8 @@ data class TripDto(
     val startRecordId: String? = null,
     val createdAt: String,
     val endedAt: String? = null,
+    val updatedAt: String? = null,
+    val deleted: Boolean = false,
 )
 
 @Serializable
@@ -77,6 +82,8 @@ data class TripRecordDto(
     val amount: Double,
     val note: String = "",
     val createdAt: String,
+    val updatedAt: String? = null,
+    val deleted: Boolean = false,
 )
 
 @Serializable
@@ -166,6 +173,7 @@ private fun BudgetSummary.toDto() = SummaryDto(
     tripCountOverride = data.tripCountOverride,
     tripEndCountAtCalibration = data.tripEndCountAtCalibration,
     lastUpdatedAt = data.lastUpdatedAt,
+    deleted = data.deleted,
 )
 
 private fun SummaryDto.toDomain() = BudgetSummary(
@@ -181,6 +189,7 @@ private fun SummaryDto.toDomain() = BudgetSummary(
         tripCountOverride = tripCountOverride,
         tripEndCountAtCalibration = tripEndCountAtCalibration,
         lastUpdatedAt = lastUpdatedAt,
+        deleted = deleted,
     ),
 )
 
@@ -192,6 +201,8 @@ private fun BudgetRecord.toDto() = RecordDto(
     amount = data.amount,
     note = data.note,
     createdAt = data.createdAt,
+    updatedAt = data.updatedAt,
+    deleted = data.deleted,
 )
 
 private fun RecordDto.toDomain(): BudgetRecord? {
@@ -205,6 +216,8 @@ private fun RecordDto.toDomain(): BudgetRecord? {
             amount = amount,
             note = note,
             createdAt = createdAt,
+            updatedAt = updatedAt ?: createdAt,
+            deleted = deleted,
         ),
     )
 }
@@ -219,6 +232,8 @@ private fun TripSummary.toDto() = TripDto(
     startRecordId = data.startRecordId,
     createdAt = data.createdAt,
     endedAt = data.endedAt,
+    updatedAt = data.updatedAt,
+    deleted = data.deleted,
 )
 
 private fun TripDto.toDomain(): TripSummary? {
@@ -234,6 +249,8 @@ private fun TripDto.toDomain(): TripSummary? {
             startRecordId = startRecordId,
             createdAt = createdAt,
             endedAt = endedAt,
+            updatedAt = updatedAt ?: createdAt,
+            deleted = deleted,
         ),
     )
 }
@@ -246,6 +263,8 @@ private fun TripRecord.toDto() = TripRecordDto(
     amount = data.amount,
     note = data.note,
     createdAt = data.createdAt,
+    updatedAt = data.updatedAt,
+    deleted = data.deleted,
 )
 
 private fun TripRecordDto.toDomain(): TripRecord? {
@@ -259,6 +278,8 @@ private fun TripRecordDto.toDomain(): TripRecord? {
             amount = amount,
             note = note,
             createdAt = createdAt,
+            updatedAt = updatedAt ?: createdAt,
+            deleted = deleted,
         ),
     )
 }

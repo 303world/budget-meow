@@ -1,0 +1,11 @@
+name = "budget-meow"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# 部署前先执行：
+#   wrangler d1 create budget-meow
+# 把返回的 database_id 填到下面
+[[d1_databases]]
+binding = "DB"
+database_name = "budget-meow"
+database_id = "REPLACE_WITH_DATABASE_ID"

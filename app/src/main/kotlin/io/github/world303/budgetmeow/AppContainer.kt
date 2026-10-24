@@ -6,6 +6,9 @@ import io.github.world303.budgetmeow.core.repo.LocalBudgetRepository
 import io.github.world303.budgetmeow.core.storage.LocalStorage
 import io.github.world303.budgetmeow.core.store.BudgetStore
 import io.github.world303.budgetmeow.core.store.SettingsStore
+import io.github.world303.budgetmeow.core.sync.AuthStore
+import io.github.world303.budgetmeow.core.sync.MeowApi
+import io.github.world303.budgetmeow.core.sync.SyncController
 import java.io.File
 
 /**
@@ -18,9 +21,21 @@ class AppContainer(context: Context) {
 
     val settings: SettingsStore = SettingsStore(storage)
 
+    val auth: AuthStore = AuthStore(context)
+
+    val sync: SyncController = SyncController(
+        api = MeowApi(),
+        authStore = auth,
+        storage = storage,
+    )
+
     private val repository: BudgetRepository = LocalBudgetRepository(storage)
 
     private val budgetStores = mutableMapOf<String, BudgetStore>()
+
+    init {
+        sync.storeFactory = { profileId -> budgetStores[profileId] ?: budgetFor(profileId) }
+    }
 
     fun budgetFor(profileId: String): BudgetStore =
         budgetStores.getOrPut(profileId) { BudgetStore(repository, profileId) }

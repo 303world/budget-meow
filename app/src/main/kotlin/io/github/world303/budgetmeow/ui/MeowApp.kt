@@ -91,7 +91,17 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
 
     val store = remember(profile.id) { container.budgetFor(profile.id) }
     val budgetState by store.state.collectAsState()
-    LaunchedEffect(profile.id) { store.load() }
+    val syncState by container.sync.state.collectAsState()
+    LaunchedEffect(profile.id) {
+        store.load()
+        container.sync.refresh(profile.id)
+    }
+    // 已登录的话，启动时自动同步一次（失败不打扰人，界面里能看到状态）
+    LaunchedEffect(profile.id, syncState.loggedIn) {
+        if (syncState.loggedIn) {
+            container.sync.sync(profile.id)
+        }
+    }
 
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -305,6 +315,14 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 onPickAvatar = { avatarLauncher.launch("image/*") },
                 onPickWallpaper = { wallpaperLauncher.launch("image/*") },
                 onRemoveWallpaper = { scope.launch { container.settings.setWallpaper(null) } },
+                syncState = syncState,
+                onSyncNow = {
+                    scope.launch {
+                        container.sync.sync(profile.id)
+                            .onSuccess { snackbar.showSnackbar(it) }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                    }
+                },
                 onEditBudget = { editBudget = true },
                 onClearMonth = { scope.launch { store.clearAllRecords() } },
                 onResetAll = { scope.launch { store.resetAccount() } },
@@ -314,7 +332,50 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
             Screen.Account -> AccountScreen(
                 profiles = settingsState.profiles,
                 activeId = profile.id,
+                syncState = syncState,
                 onBack = { pop() },
+                onLogin = { email, password ->
+                    scope.launch {
+                        container.sync.login(profile.id, email, password)
+                            .onSuccess {
+                                snackbar.showSnackbar("已登录 $it，正在同步…")
+                                container.sync.sync(profile.id)
+                                    .onSuccess { msg -> snackbar.showSnackbar(msg) }
+                                    .onFailure { err -> snackbar.showSnackbar(err.message ?: "同步失败") }
+                            }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "登录失败") }
+                    }
+                },
+                onRegister = { email, password ->
+                    scope.launch {
+                        container.sync.register(profile.id, email, password)
+                            .onSuccess {
+                                snackbar.showSnackbar("注册成功，正在同步…")
+                                container.sync.sync(profile.id)
+                            }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "注册失败") }
+                    }
+                },
+                onLogout = {
+                    scope.launch {
+                        container.sync.logout(profile.id)
+                        snackbar.showSnackbar("已退出登录，云端数据保留")
+                    }
+                },
+                onSyncNow = {
+                    scope.launch {
+                        container.sync.sync(profile.id)
+                            .onSuccess { snackbar.showSnackbar(it) }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                    }
+                },
+                onDeleteAccount = { pwd ->
+                    scope.launch {
+                        container.sync.deleteAccount(profile.id, pwd)
+                            .onSuccess { snackbar.showSnackbar("云端账号已注销") }
+                            .onFailure { snackbar.showSnackbar(it.message ?: "注销失败") }
+                    }
+                },
                 onSwitch = { id ->
                     scope.launch {
                         container.settings.switchProfile(id)

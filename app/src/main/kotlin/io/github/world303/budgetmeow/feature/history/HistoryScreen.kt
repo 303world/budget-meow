@@ -27,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.model.BudgetRecord
@@ -127,9 +129,9 @@ fun RecordRow(
 }
 
 @Composable
-private fun ChartIcon(tint: Color) {
+private fun ChartIcon(tint: Color, modifier: Modifier = Modifier) {
     androidx.compose.foundation.Canvas(
-        modifier = Modifier.width(22.dp).height(22.dp),
+        modifier = modifier.width(22.dp).height(22.dp),
     ) {
         val barWidth = size.width * 0.2f
         val gap = size.width * 0.14f
@@ -201,7 +203,10 @@ fun HistoryScreen(
         actions = {
             if (!selecting) {
                 IconButton(onClick = onOpenStats) {
-                    ChartIcon(tint = MiuixTheme.colorScheme.onSurface)
+                    ChartIcon(
+                        tint = MiuixTheme.colorScheme.onSurface,
+                        modifier = Modifier.semantics { contentDescription = "统计" },
+                    )
                 }
                 IconButton(onClick = onOpenSearch) {
                     Icon(
