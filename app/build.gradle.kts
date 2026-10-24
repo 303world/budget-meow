@@ -10,7 +10,8 @@ android {
 
     defaultConfig {
         applicationId = "io.github.world303.budgetmeow"
-        minSdk = 26
+        // 液态玻璃用 AGSL RuntimeShader，miuix-blur 要求 API 33
+        minSdk = 33
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"

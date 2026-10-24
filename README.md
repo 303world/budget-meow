@@ -27,7 +27,7 @@
 | 设计语言 | Miuix 0.9.4（Apache-2.0） |
 | 状态 | `StateFlow` + 手写 Store（不引 ViewModel/Hilt，减少构建面） |
 | 持久化 | 单文件 JSON（kotlinx.serialization）+ 原子写（tmp → fsync → rename） |
-| 构建 | AGP 9.4.1 / Gradle 9.7.1 / JDK 21，`minSdk 26`、`compileSdk 37` |
+| 构建 | AGP 9.4.1 / Gradle 9.7.1 / JDK 21，`minSdk 33`、`compileSdk 37` |
 
 ## 结构与分层
 
@@ -49,6 +49,8 @@ app/src/main/kotlin/io/github/world303/budgetmeow/
 ## 构建
 
 需要 JDK 21 与 Android SDK 37。
+
+> `minSdk 33` 是被液态玻璃逼上去的：`miuix-blur` 依赖 AGSL RuntimeShader。要兼容 Android 8–12，把依赖换成 [kyant backdrop](https://github.com/Kyant0/AndroidLiquidGlass)（Apache-2.0，支持到 26）并替换 `ui/theme/MeowGlass.kt` 里的模糊调用即可。
 
 ```bash
 ./gradlew :app:assembleDebug          # 调试包
