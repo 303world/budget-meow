@@ -36,11 +36,11 @@ class ExpressionParserTest {
 
     @Test
     fun `非法输入返回 null`() {
-        assertNull(ExpressionParser.evaluate("1+")!!)
-        assertNull(ExpressionParser.evaluate("abc")!!)
-        assertNull(ExpressionParser.evaluate("()")!!)
-        assertNull(ExpressionParser.evaluate("1 2")!!)
-        assertNull(ExpressionParser.evaluate("2/0")!!)
+        assertNull(ExpressionParser.evaluate("1+"))
+        assertNull(ExpressionParser.evaluate("abc"))
+        assertNull(ExpressionParser.evaluate("()"))
+        assertNull(ExpressionParser.evaluate("1 2"))
+        assertNull(ExpressionParser.evaluate("2/0"))
     }
 
     @Test
