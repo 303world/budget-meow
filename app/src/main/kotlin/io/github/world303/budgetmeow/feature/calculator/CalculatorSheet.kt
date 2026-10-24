@@ -312,6 +312,17 @@ private fun ExpressionDisplay(
                         )
                     },
             ) {
+                if (isEmpty) {
+                    Text(
+                        text = "输入金额或算式，长按可放大调光标",
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopStart),
+                    )
+                }
+
                 // 预览放在同一张卡片的上沿，空出来的高度正好给放大镜
                 if (previewText.isNotEmpty()) {
                     Text(
