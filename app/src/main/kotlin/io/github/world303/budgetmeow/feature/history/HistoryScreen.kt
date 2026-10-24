@@ -48,7 +48,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -128,6 +127,27 @@ fun RecordRow(
 }
 
 @Composable
+private fun ChartIcon(tint: Color) {
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier.width(22.dp).height(22.dp),
+    ) {
+        val barWidth = size.width * 0.2f
+        val gap = size.width * 0.14f
+        val heights = listOf(0.5f, 0.95f, 0.72f)
+        heights.forEachIndexed { index, ratio ->
+            val left = size.width * 0.08f + index * (barWidth + gap)
+            val barHeight = size.height * ratio
+            drawRoundRect(
+                color = tint,
+                topLeft = androidx.compose.ui.geometry.Offset(left, size.height - barHeight),
+                size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2),
+            )
+        }
+    }
+}
+
+@Composable
 private fun SelectionDot(selected: Boolean) {
     val color = if (selected) MeowPalette.Blue else MiuixTheme.colorScheme.dividerLine
     Canvas(modifier = Modifier.width(20.dp).height(20.dp)) {
@@ -181,11 +201,7 @@ fun HistoryScreen(
         actions = {
             if (!selecting) {
                 IconButton(onClick = onOpenStats) {
-                    Icon(
-                        imageVector = MiuixIcons.Report,
-                        contentDescription = "统计",
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
+                    ChartIcon(tint = MiuixTheme.colorScheme.onSurface)
                 }
                 IconButton(onClick = onOpenSearch) {
                     Icon(

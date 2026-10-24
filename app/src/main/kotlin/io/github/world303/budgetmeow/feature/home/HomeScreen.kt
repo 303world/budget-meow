@@ -124,6 +124,7 @@ fun HomeScreen(
         if (state.activeTrip == null) isTripMode = false
     }
 
+    val hasWallpaper = settings.wallpaperPath != null
     val headerText = when (settings.headerDisplayMode) {
         HeaderDisplayMode.Nickname -> profile.nickname
         HeaderDisplayMode.Custom -> settings.headerCustomText.ifBlank { "我的预算" }
@@ -213,7 +214,7 @@ fun HomeScreen(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    BigMoney(state.tripBalance)
+                    BigMoney(state.tripBalance, withShadow = hasWallpaper)
                 } else {
                     Text(
                         text = "剩余预算",
@@ -236,6 +237,7 @@ fun HomeScreen(
                     BigMoney(
                         amount = state.balance,
                         color = if (state.balance < 0) MeowPalette.Red else Color.Unspecified,
+                        withShadow = hasWallpaper,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -252,7 +254,7 @@ fun HomeScreen(
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        BigMoney(amount = state.savedAmount, color = MeowPalette.Green)
+                        BigMoney(amount = state.savedAmount, color = MeowPalette.Green, withShadow = hasWallpaper)
                     }
                 }
             }
@@ -502,11 +504,24 @@ private fun HeaderPill(
 }
 
 @Composable
-private fun BigMoney(amount: Double, color: Color = Color.Unspecified) {
+private fun BigMoney(
+    amount: Double,
+    color: Color = Color.Unspecified,
+    withShadow: Boolean = false,
+) {
+    val shadow = if (withShadow) {
+        androidx.compose.ui.graphics.Shadow(
+            color = Color.Black.copy(alpha = 0.45f),
+            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+            blurRadius = 12f,
+        )
+    } else {
+        null
+    }
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = "¥",
-            style = MiuixTheme.textStyles.title3,
+            style = if (shadow != null) MiuixTheme.textStyles.title3.copy(shadow = shadow) else MiuixTheme.textStyles.title3,
             color = color,
         )
         Spacer(modifier = Modifier.size(2.dp))
@@ -514,7 +529,7 @@ private fun BigMoney(amount: Double, color: Color = Color.Unspecified) {
             text = amount.formatMoney(),
             fontSize = 46.sp,
             color = color,
-            style = MiuixTheme.textStyles.title1,
+            style = if (shadow != null) MiuixTheme.textStyles.title1.copy(shadow = shadow) else MiuixTheme.textStyles.title1,
         )
     }
 }

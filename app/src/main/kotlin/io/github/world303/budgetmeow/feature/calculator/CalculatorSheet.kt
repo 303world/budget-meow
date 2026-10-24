@@ -151,16 +151,9 @@ fun CalculatorSheet(
         ) {
             ExpressionDisplay(
                 state = state,
+                previewText = previewText,
+                previewColor = previewColor,
                 onCursorChange = { state = CalculatorEngine.setCursor(state, it) },
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = previewText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = previewColor,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End,
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -245,7 +238,12 @@ fun CalculatorSheet(
 }
 
 @Composable
-private fun ExpressionDisplay(state: CalcState, onCursorChange: (Int) -> Unit) {
+private fun ExpressionDisplay(
+    state: CalcState,
+    previewText: String,
+    previewColor: Color,
+    onCursorChange: (Int) -> Unit,
+) {
     val display = state.displayText()
     val isEmpty = display.isEmpty()
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -314,6 +312,20 @@ private fun ExpressionDisplay(state: CalcState, onCursorChange: (Int) -> Unit) {
                         )
                     },
             ) {
+                // 预览放在同一张卡片的上沿，空出来的高度正好给放大镜
+                if (previewText.isNotEmpty()) {
+                    Text(
+                        text = previewText,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = previewColor,
+                        maxLines = 1,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopEnd),
+                    )
+                }
+
                 Text(
                     text = annotated,
                     style = textStyle,

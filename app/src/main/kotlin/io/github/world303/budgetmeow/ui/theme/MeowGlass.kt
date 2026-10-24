@@ -69,7 +69,8 @@ fun MeowWallpaperBackground(
     modifier: Modifier = Modifier,
 ) {
     val colors = MiuixTheme.colorScheme
-    val dark = colors.onBackground.luminance() < 0.5f
+    // onBackground 接近白色 ⇒ 当前是深色主题
+    val dark = colors.onBackground.luminance() > 0.5f
 
     Box(modifier = modifier.background(colors.surface)) {
         val bitmap = remember(wallpaperPath) {
@@ -83,17 +84,18 @@ fun MeowWallpaperBackground(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
-                // 蒙层保证文字对比度：浅色主题压白，深色主题压黑
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = if (dark) 0.38f else 0.06f)),
-                )
-                if (!dark) {
+                // 蒙层保证文字对比度：深色主题压黑保白字，浅色主题压白保深字
+                if (dark) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.White.copy(alpha = 0.18f)),
+                            .background(Color.Black.copy(alpha = 0.42f)),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White.copy(alpha = 0.28f)),
                     )
                 }
             }
