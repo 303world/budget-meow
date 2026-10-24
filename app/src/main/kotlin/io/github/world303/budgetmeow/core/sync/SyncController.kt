@@ -95,6 +95,10 @@ class SyncController(
         val store = storeFactory?.invoke(profileId)
             ?: return "同步未就绪"
 
+        // 同步前先从磁盘重读一遍：启动时的自动同步可能与 store.load() 抢跑，
+        // 拿空 dataset 去合并会把本地未上传的记录冲掉
+        store.reload()
+
         val remote = api.getDataset(token)
         var rev = remote.rev
         var remotePayload = remote.payload
