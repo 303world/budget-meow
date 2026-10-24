@@ -352,7 +352,10 @@ private fun ExpressionDisplay(
                 // 光标：直接画在文字排版结果上，位置精确到像素
                 val textLayout = layout
                 if (textLayout != null) {
-                    val cursorRect = textLayout.getCursorRect(state.cursor.coerceIn(0, display.length))
+                    // 布局可能还是上一帧的（长度更短），必须按布局自己的长度夹取，否则越界崩溃
+                    val layoutLength = textLayout.layoutInput.text.length
+                    val safeCursor = state.cursor.coerceIn(0, layoutLength)
+                    val cursorRect = textLayout.getCursorRect(safeCursor)
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val barWidth = 2.dp.toPx()
                         drawRoundRect(
@@ -368,7 +371,9 @@ private fun ExpressionDisplay(
                 val mx = magnifierX
                 if (mx != null && textLayout != null) {
                     val size = 76.dp
-                    val cursorRect = textLayout.getCursorRect(state.cursor.coerceIn(0, display.length))
+                    val layoutLength = textLayout.layoutInput.text.length
+                    val safeCursor = state.cursor.coerceIn(0, layoutLength)
+                    val cursorRect = textLayout.getCursorRect(safeCursor)
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
