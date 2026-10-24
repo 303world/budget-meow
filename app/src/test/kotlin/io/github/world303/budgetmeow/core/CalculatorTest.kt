@@ -39,7 +39,8 @@ class ExpressionParserTest {
         assertNull(ExpressionParser.evaluate("1+"))
         assertNull(ExpressionParser.evaluate("abc"))
         assertNull(ExpressionParser.evaluate("()"))
-        assertNull(ExpressionParser.evaluate("1 2"))
+        // 空格会被去掉，所以 "1 2" 等价于 12（与 Web 端 safeEval 一致）
+        assertEquals(12.0, ExpressionParser.evaluate("1 2")!!, 1e-9)
         assertNull(ExpressionParser.evaluate("2/0"))
     }
 
