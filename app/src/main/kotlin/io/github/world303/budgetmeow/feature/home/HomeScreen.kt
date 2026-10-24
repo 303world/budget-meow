@@ -73,7 +73,7 @@ import top.yukonga.miuix.kmp.icon.extended.Forward
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.icon.extended.Settings
@@ -165,7 +165,7 @@ fun HomeScreen(
             ) {
                 IconButton(onClick = onOpenHistory) {
                     Icon(
-                        imageVector = MiuixIcons.Recent,
+                        imageVector = MiuixIcons.ListView,
                         contentDescription = "历史记录",
                         tint = MiuixTheme.colorScheme.onSurface,
                     )

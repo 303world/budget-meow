@@ -37,7 +37,7 @@ fun Modifier.meowGlassSurface(
     shape: Shape,
     enabled: Boolean,
     blurRadius: Float = 26f,
-    tintColor: Color = MiuixTheme.colorScheme.surface,
+    tintColor: Color = MiuixTheme.colorScheme.surfaceContainer,
 ): Modifier {
     if (!enabled) return background(tintColor, shape).clip(shape)
     val backdrop = LocalMeowBackdrop.current

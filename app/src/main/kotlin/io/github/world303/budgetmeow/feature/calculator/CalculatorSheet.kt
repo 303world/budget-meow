@@ -135,7 +135,17 @@ fun CalculatorSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .meowGlassSurface(RoundedCornerShape(26.dp), enabled = glassEffect, blurRadius = 30f)
+                .then(
+                    if (glassEffect) {
+                        Modifier.meowGlassSurface(
+                            shape = RoundedCornerShape(26.dp),
+                            enabled = true,
+                            blurRadius = 30f,
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
                 .padding(horizontal = 16.dp)
                 .padding(top = 8.dp, bottom = 14.dp),
         ) {
