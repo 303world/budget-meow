@@ -541,15 +541,18 @@ private fun BigMoney(
     color: Color = Color.Unspecified,
     shadow: androidx.compose.ui.graphics.Shadow? = null,
 ) {
-    Row(verticalAlignment = Alignment.Bottom) {
+    Row {
         Text(
             text = "¥",
+            // 按基线对齐，而不是底边对齐：字号差一倍时底边对齐会让符号显得往下掉
+            modifier = Modifier.alignByBaseline(),
             style = if (shadow != null) MiuixTheme.textStyles.title3.copy(shadow = shadow) else MiuixTheme.textStyles.title3,
             color = color,
         )
-        Spacer(modifier = Modifier.size(2.dp))
+        Spacer(modifier = Modifier.size(3.dp))
         Text(
             text = amount.formatMoney(),
+            modifier = Modifier.alignByBaseline(),
             fontSize = 46.sp,
             color = color,
             style = if (shadow != null) MiuixTheme.textStyles.title1.copy(shadow = shadow) else MiuixTheme.textStyles.title1,

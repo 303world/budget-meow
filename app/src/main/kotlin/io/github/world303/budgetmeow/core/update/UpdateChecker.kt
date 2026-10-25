@@ -12,6 +12,20 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
+enum class UpdateSource(val wire: String) {
+    /** 国内镜像：挂在自己域名上的 Worker，转 GitHub Releases */
+    Mirror("mirror"),
+
+    /** GitHub 直连 */
+    GitHub("github"),
+    ;
+
+    companion object {
+        fun fromWire(wire: String?): UpdateSource =
+            entries.firstOrNull { it.wire == wire } ?: Mirror
+    }
+}
+
 data class UpdateInfo(
     val latestVersion: String,
     val releaseUrl: String,
@@ -27,12 +41,23 @@ data class UpdateInfo(
  */
 object UpdateChecker {
 
-    private const val ENDPOINT = "https://api.github.com/repos/303world/budget-meow/releases/latest"
+    private const val MIRROR_ENDPOINT = "https://meow.303world.ccwu.cc/v1/release/latest"
+    private const val GITHUB_ENDPOINT = "https://api.github.com/repos/303world/budget-meow/releases/latest"
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    suspend fun check(): Result<UpdateInfo> = withContext(Dispatchers.IO) {
+    /**
+     * 先走用户选的源；失败就自动换另一个。
+     * 国内镜像默认开启——workers.dev 和 api.github.com 在国内都不稳。
+     */
+    suspend fun check(source: UpdateSource = UpdateSource.Mirror): Result<UpdateInfo> {
+        val primary = if (source == UpdateSource.Mirror) MIRROR_ENDPOINT else GITHUB_ENDPOINT
+        val secondary = if (source == UpdateSource.Mirror) GITHUB_ENDPOINT else MIRROR_ENDPOINT
+        return runCatching { fetch(primary) }.recoverCatching { fetch(secondary) }
+    }
+
+    private suspend fun fetch(endpoint: String): UpdateInfo = withContext(Dispatchers.IO) {
         runCatching {
-            val connection = (URL(ENDPOINT).openConnection() as HttpURLConnection).apply {
+            val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 12_000
                 readTimeout = 18_000
@@ -60,7 +85,7 @@ object UpdateChecker {
             } finally {
                 connection.disconnect()
             }
-        }
+        }.getOrThrow()
     }
 
     /** a 是否比 b 新（1.2.10 > 1.2.9） */

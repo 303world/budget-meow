@@ -8,6 +8,7 @@
  * 部署方式见 server/README.md
  */
 
+const REPO = '303world/budget-meow';
 const MAX_PAYLOAD_BYTES = 4 * 1024 * 1024;
 const PBKDF2_ITERATIONS = 100000; // Workers 的 WebCrypto 上限就是 10 万
 const TOKEN_TTL_DAYS = 180;
@@ -32,6 +33,8 @@ export default {
       if (url.pathname === '/v1/me' && method === 'GET') return await me(request, env);
       if (url.pathname === '/v1/dataset' && method === 'GET') return await getDataset(request, env);
       if (url.pathname === '/v1/dataset' && method === 'PUT') return await putDataset(request, env);
+      if (url.pathname === '/v1/release/latest' && method === 'GET') return await latestRelease(url);
+      if (url.pathname === '/v1/release/download' && method === 'GET') return await downloadAsset(url);
       if (url.pathname === '/v1/password' && method === 'POST') return await changePassword(request, env);
       if (url.pathname === '/v1/account' && method === 'DELETE') return await deleteAccount(request, env);
       return json({ error: 'not_found' }, 404);
@@ -189,6 +192,61 @@ async function deleteAccount(request, env) {
   await env.DB.prepare('DELETE FROM tokens WHERE user_id = ?').bind(auth.userId).run();
   await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(auth.userId).run();
   return json({ ok: true });
+}
+
+// ---------------------------------------------------------------- 更新镜像
+
+/**
+ * 国内镜像：把 GitHub Releases 的最新版本信息转发出来，并把 APK 直链改写成
+ * 本 Worker 的下载地址。GitHub 在国内经常连不上，走这里更稳。
+ * 只代理本仓库的 release 资源，避免变成开放代理。
+ */
+async function latestRelease(url) {
+  const upstream = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    headers: { 'user-agent': 'budget-meow-mirror', accept: 'application/vnd.github+json' },
+    cf: { cacheEverything: true, cacheTtl: 300 },
+  });
+  if (!upstream.ok) return json({ error: 'github_unavailable', status: upstream.status }, 502);
+
+  const data = await upstream.json();
+  const assets = (data.assets || []).map((asset) => ({
+    name: asset.name,
+    size: asset.size,
+    browser_download_url:
+      `${url.origin}/v1/release/download?url=${encodeURIComponent(asset.browser_download_url)}`,
+  }));
+
+  return json({
+    tag_name: data.tag_name,
+    html_url: `https://github.com/${REPO}/releases/tag/${data.tag_name}`,
+    body: data.body || '',
+    assets,
+    mirrored: true,
+  });
+}
+
+async function downloadAsset(url) {
+  const target = url.searchParams.get('url') || '';
+  if (!new RegExp(`^https://github\\.com/${REPO}/releases/download/`).test(target)) {
+    return json({ error: 'bad_url' }, 400);
+  }
+
+  const upstream = await fetch(target, {
+    headers: { 'user-agent': 'budget-meow-mirror' },
+    redirect: 'follow',
+    cf: { cacheEverything: true, cacheTtl: 86400 },
+  });
+  if (!upstream.ok) return json({ error: 'upstream', status: upstream.status }, 502);
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'content-type': 'application/vnd.android.package-archive',
+      'content-length': upstream.headers.get('content-length') || '',
+      'cache-control': 'public, max-age=86400',
+      ...corsHeaders(),
+    },
+  });
 }
 
 // ---------------------------------------------------------------- helpers

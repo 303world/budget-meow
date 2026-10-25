@@ -104,6 +104,7 @@ data class SettingsDto(
     val wallpaperPath: String? = null,
     val fullScreen: Boolean = false,
     val autoCheckUpdate: Boolean = true,
+    val updateSource: String = "mirror",
 )
 
 @Serializable

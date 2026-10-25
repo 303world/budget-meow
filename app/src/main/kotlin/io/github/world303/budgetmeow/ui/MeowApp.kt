@@ -42,6 +42,7 @@ import io.github.world303.budgetmeow.core.model.ThemeMode
 import io.github.world303.budgetmeow.core.update.UpdateChecker
 import io.github.world303.budgetmeow.core.update.UpdateInfo
 import io.github.world303.budgetmeow.core.update.UpdateInstaller
+import io.github.world303.budgetmeow.core.update.UpdateSource
 import io.github.world303.budgetmeow.core.EulaStore
 import io.github.world303.budgetmeow.feature.about.APP_VERSION
 import io.github.world303.budgetmeow.feature.about.AboutScreen
@@ -135,8 +136,9 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
     var updateProgress by remember { mutableIntStateOf(-1) }
 
     val checkUpdate: (Boolean) -> Unit = { silent ->
+        val source = UpdateSource.fromWire(profile.settings.updateSource)
         scope.launch {
-            UpdateChecker.check()
+            UpdateChecker.check(source)
                 .onSuccess { info ->
                     if (UpdateChecker.isNewer(info.latestVersion, APP_VERSION)) {
                         updateInfo = info
@@ -451,6 +453,12 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
             Screen.About -> AboutScreen(
                 onCheckUpdate = { checkUpdate(false) },
                 autoCheckUpdate = profile.settings.autoCheckUpdate,
+                updateSource = UpdateSource.fromWire(profile.settings.updateSource),
+                onUpdateSourceChange = { newSource ->
+                    scope.launch {
+                        container.settings.updateSettings { it.copy(updateSource = newSource.wire) }
+                    }
+                },
                 onToggleAutoCheck = { enabled ->
                     scope.launch {
                         container.settings.updateSettings { it.copy(autoCheckUpdate = enabled) }

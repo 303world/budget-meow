@@ -58,6 +58,7 @@ data class MeowSettings(
     val wallpaperPath: String? = null,
     val fullScreen: Boolean = false,
     val autoCheckUpdate: Boolean = true,
+    val updateSource: String = "mirror",
 )
 
 data class Profile(
@@ -85,6 +86,7 @@ fun SettingsDto.toDomain(): MeowSettings = MeowSettings(
     wallpaperPath = wallpaperPath,
     fullScreen = fullScreen,
     autoCheckUpdate = autoCheckUpdate,
+    updateSource = updateSource,
 )
 
 fun MeowSettings.toDto(): SettingsDto = SettingsDto(
@@ -104,6 +106,7 @@ fun MeowSettings.toDto(): SettingsDto = SettingsDto(
     wallpaperPath = wallpaperPath,
     fullScreen = fullScreen,
     autoCheckUpdate = autoCheckUpdate,
+    updateSource = updateSource,
 )
 
 fun ProfileDto.toDomain(): Profile = Profile(

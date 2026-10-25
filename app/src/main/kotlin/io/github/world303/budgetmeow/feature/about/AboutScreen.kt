@@ -31,9 +31,10 @@ import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-const val APP_VERSION = "1.3.2"
+const val APP_VERSION = "1.4.0"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
 const val RELEASES_URL = "https://github.com/303world/budget-meow/releases/latest"
 const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
@@ -43,6 +44,8 @@ fun AboutScreen(
     onCheckUpdate: () -> Unit,
     autoCheckUpdate: Boolean,
     onToggleAutoCheck: (Boolean) -> Unit,
+    updateSource: UpdateSource,
+    onUpdateSourceChange: (UpdateSource) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -91,6 +94,17 @@ fun AboutScreen(
                     trailingText = "v$APP_VERSION",
                     showArrow = true,
                     onClick = onCheckUpdate,
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "更新源",
+                    summary = when (updateSource) {
+                        UpdateSource.Mirror -> "国内镜像，GitHub 连不上时也能更新"
+                        UpdateSource.GitHub -> "直接从 GitHub 拉取"
+                    },
+                    trailingText = if (updateSource == UpdateSource.Mirror) "国内镜像" else "GitHub",
+                    showArrow = true,
+                    onClick = { showSourcePicker = true },
                 )
                 MeowDivider()
                 MeowSwitchRow(
@@ -182,6 +196,34 @@ fun AboutScreen(
                     color = MeowPalette.Blue,
                     textAlign = TextAlign.Center,
                 )
+            }
+        }
+
+        if (showSourcePicker) {
+            OverlayBottomSheet(
+                show = true,
+                title = "更新源",
+                onDismissRequest = { showSourcePicker = false },
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    MeowRow(
+                        title = "国内镜像（推荐）",
+                        summary = if (updateSource == UpdateSource.Mirror) "当前" else "走自己的服务器转发，不用直连 GitHub",
+                        onClick = {
+                            showSourcePicker = false
+                            onUpdateSourceChange(UpdateSource.Mirror)
+                        },
+                    )
+                    MeowDivider()
+                    MeowRow(
+                        title = "GitHub 直连",
+                        summary = if (updateSource == UpdateSource.GitHub) "当前" else "海外网络更稳，国内可能连不上",
+                        onClick = {
+                            showSourcePicker = false
+                            onUpdateSourceChange(UpdateSource.GitHub)
+                        },
+                    )
+                }
             }
         }
     }

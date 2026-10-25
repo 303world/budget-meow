@@ -15,7 +15,10 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /** 同步服务地址。换后端只改这里 */
-const val DEFAULT_API_BASE = "https://budget-meow.714945046.workers.dev"
+// workers.dev 在国内经常被 DNS 污染/阻断，这里走挂在自有域名上的同一个 Worker
+const val DEFAULT_API_BASE = "https://meow.303world.ccwu.cc"
+// 备用地址（海外或自有域名异常时可在代码里切换）
+const val FALLBACK_API_BASE = "https://budget-meow.714945046.workers.dev"
 
 class ApiException(val code: Int, val error: String) : Exception(error)
 
