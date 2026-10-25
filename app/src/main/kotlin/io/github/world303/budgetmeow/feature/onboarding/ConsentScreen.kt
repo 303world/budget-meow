@@ -1,6 +1,7 @@
 package io.github.world303.budgetmeow.feature.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +45,7 @@ fun ConsentScreen(
     var showDoc by remember { mutableStateOf<String?>(null) }
 
     Scaffold { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -127,11 +129,12 @@ fun ConsentScreen(
             )
             Spacer(modifier = Modifier.height(20.dp))
         }
-    }
 
-    val doc = showDoc
-    if (doc != null) {
-        OverlayDialog(
+        // 弹层必须放在 Scaffold 的内容里：Miuix 的 OverlayDialog 需要 Scaffold 提供的弹层宿主，
+        // 写在 Scaffold 外面会静默不显示（欢迎页的《隐私政策》按钮点了没反应就是这个原因）
+        val doc = showDoc
+        if (doc != null) {
+            OverlayDialog(
             show = true,
             title = if (doc == Legal.PRIVACY) "隐私政策" else "用户协议",
             onDismissRequest = { showDoc = null },
@@ -155,6 +158,8 @@ fun ConsentScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
             )
+            }
         }
     }
+}
 }
