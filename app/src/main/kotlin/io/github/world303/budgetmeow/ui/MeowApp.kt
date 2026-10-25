@@ -13,6 +13,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -36,6 +37,8 @@ import io.github.world303.budgetmeow.AppContainer
 import io.github.world303.budgetmeow.core.backup.BackupService
 import io.github.world303.budgetmeow.core.model.MeowSettings
 import io.github.world303.budgetmeow.core.model.ThemeMode
+import io.github.world303.budgetmeow.core.update.UpdateChecker
+import io.github.world303.budgetmeow.feature.about.APP_VERSION
 import io.github.world303.budgetmeow.feature.about.AboutScreen
 import io.github.world303.budgetmeow.feature.history.HistoryScreen
 import io.github.world303.budgetmeow.feature.history.SearchScreen
@@ -44,6 +47,8 @@ import io.github.world303.budgetmeow.feature.settings.AccountScreen
 import io.github.world303.budgetmeow.feature.settings.SettingsScreen
 import io.github.world303.budgetmeow.feature.stats.StatsScreen
 import io.github.world303.budgetmeow.ui.component.InputDialog
+import io.github.world303.budgetmeow.ui.component.MeowToast
+import io.github.world303.budgetmeow.ui.component.MeowToastHost
 import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
 import io.github.world303.budgetmeow.ui.theme.MeowTheme
 import io.github.world303.budgetmeow.ui.theme.isScheduledDarkNow
@@ -53,7 +58,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.File
@@ -104,7 +108,6 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
     }
 
     val scope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
     // 定时深色：每分钟重算一次
@@ -117,6 +120,16 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
     }
     val darkOverride = remember(tick, profile.settings) {
         if (profile.settings.theme == ThemeMode.Scheduled) isScheduledDarkNow(profile.settings) else null
+    }
+
+    // ---------- 自动检查更新 ----------
+    LaunchedEffect(profile.id, profile.settings.autoCheckUpdate) {
+        if (!profile.settings.autoCheckUpdate) return@LaunchedEffect
+        UpdateChecker.check().onSuccess { info ->
+            if (UpdateChecker.isNewer(info.latestVersion, APP_VERSION)) {
+                MeowToast.show("发现新版本 v${info.latestVersion}，可在「关于」里查看")
+            }
+        }
     }
 
     // ---------- 全屏模式 ----------
@@ -146,7 +159,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                         } ?: error("写入失败")
                     }
                 }.isSuccess
-                snackbar.showSnackbar(if (ok) "备份已导出" else "导出失败")
+                MeowToast.show(if (ok) "备份已导出" else "导出失败")
             }
         }
     }
@@ -166,9 +179,9 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 result.onSuccess { imported ->
                     store.importDataset(imported.dataset)
                     val suffix = if (imported.skipped > 0) "，跳过 ${imported.skipped} 条异常记录" else ""
-                    snackbar.showSnackbar("恢复成功$suffix")
+                    MeowToast.show("恢复成功$suffix")
                 }.onFailure {
-                    snackbar.showSnackbar(it.message ?: "导入失败")
+                    MeowToast.show(it.message ?: "导入失败")
                 }
             }
         }
@@ -190,7 +203,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 }
                 if (temp != null) {
                     container.settings.updateAvatar(temp)
-                    snackbar.showSnackbar("头像已更新")
+                    MeowToast.show("头像已更新")
                 }
             }
         }
@@ -212,7 +225,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 }
                 if (temp != null) {
                     container.settings.setWallpaper(temp)
-                    snackbar.showSnackbar("壁纸已更新")
+                    MeowToast.show("壁纸已更新")
                 }
             }
         }
@@ -278,11 +291,10 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 onSyncNow = {
                     scope.launch {
                         container.sync.sync(profile.id)
-                            .onSuccess { snackbar.showSnackbar(it) }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                            .onSuccess { MeowToast.show(it) }
+                            .onFailure { MeowToast.show(it.message ?: "同步失败") }
                     }
                 },
-                snackbar = snackbar,
             )
 
             Screen.History -> HistoryScreen(
@@ -290,19 +302,16 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 onBack = { pop() },
                 onOpenSearch = { push(Screen.Search) },
                 onOpenStats = { push(Screen.Stats) },
-                snackbar = snackbar,
             )
 
             Screen.Search -> SearchScreen(
                 store = store,
                 onBack = { pop() },
-                snackbar = snackbar,
             )
 
             Screen.Stats -> StatsScreen(
                 store = store,
                 onBack = { pop() },
-                snackbar = snackbar,
             )
 
             Screen.Settings -> SettingsScreen(
@@ -327,14 +336,13 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 onSyncNow = {
                     scope.launch {
                         container.sync.sync(profile.id)
-                            .onSuccess { snackbar.showSnackbar(it) }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                            .onSuccess { MeowToast.show(it) }
+                            .onFailure { MeowToast.show(it.message ?: "同步失败") }
                     }
                 },
                 onEditBudget = { editBudget = true },
                 onClearMonth = { scope.launch { store.clearAllRecords() } },
                 onResetAll = { scope.launch { store.resetAccount() } },
-                snackbar = snackbar,
             )
 
             Screen.Account -> AccountScreen(
@@ -346,42 +354,42 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                     scope.launch {
                         container.sync.login(profile.id, email, password)
                             .onSuccess {
-                                snackbar.showSnackbar("已登录 $it，正在同步…")
+                                MeowToast.show("已登录 $it，正在同步…")
                                 container.sync.sync(profile.id)
-                                    .onSuccess { msg -> snackbar.showSnackbar(msg) }
-                                    .onFailure { err -> snackbar.showSnackbar(err.message ?: "同步失败") }
+                                    .onSuccess { msg -> MeowToast.show(msg) }
+                                    .onFailure { err -> MeowToast.show(err.message ?: "同步失败") }
                             }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "登录失败") }
+                            .onFailure { MeowToast.show(it.message ?: "登录失败") }
                     }
                 },
                 onRegister = { email, password ->
                     scope.launch {
                         container.sync.register(profile.id, email, password)
                             .onSuccess {
-                                snackbar.showSnackbar("注册成功，正在同步…")
+                                MeowToast.show("注册成功，正在同步…")
                                 container.sync.sync(profile.id)
                             }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "注册失败") }
+                            .onFailure { MeowToast.show(it.message ?: "注册失败") }
                     }
                 },
                 onLogout = {
                     scope.launch {
                         container.sync.logout(profile.id)
-                        snackbar.showSnackbar("已退出登录，云端数据保留")
+                        MeowToast.show("已退出登录，云端数据保留")
                     }
                 },
                 onSyncNow = {
                     scope.launch {
                         container.sync.sync(profile.id)
-                            .onSuccess { snackbar.showSnackbar(it) }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "同步失败") }
+                            .onSuccess { MeowToast.show(it) }
+                            .onFailure { MeowToast.show(it.message ?: "同步失败") }
                     }
                 },
                 onDeleteAccount = { pwd ->
                     scope.launch {
                         container.sync.deleteAccount(profile.id, pwd)
-                            .onSuccess { snackbar.showSnackbar("云端账号已注销") }
-                            .onFailure { snackbar.showSnackbar(it.message ?: "注销失败") }
+                            .onSuccess { MeowToast.show("云端账号已注销") }
+                            .onFailure { MeowToast.show(it.message ?: "注销失败") }
                     }
                 },
                 onSwitch = { id ->
@@ -402,17 +410,27 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                         container.dropBudget(id)
                     }
                 },
-                snackbar = snackbar,
             )
 
             Screen.About -> AboutScreen(
+                autoCheckUpdate = profile.settings.autoCheckUpdate,
+                onToggleAutoCheck = { enabled ->
+                    scope.launch {
+                        container.settings.updateSettings { it.copy(autoCheckUpdate = enabled) }
+                    }
+                },
                 onBack = { pop() },
-                snackbar = snackbar,
             )
 
                     else -> Unit
                 }
                 }
+
+                MeowToastHost(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding(),
+                )
 
                 if (editBudget) {
             InputDialog(
@@ -428,7 +446,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                     if (amount != null && amount > 0) {
                         scope.launch { store.updateInitialBudget(amount) }
                     } else {
-                        scope.launch { snackbar.showSnackbar("请输入大于 0 的金额") }
+                        scope.launch { MeowToast.show("请输入大于 0 的金额") }
                     }
                 },
                     onDismiss = { editBudget = false },

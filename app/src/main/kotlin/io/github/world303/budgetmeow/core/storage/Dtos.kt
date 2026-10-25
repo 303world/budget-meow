@@ -103,6 +103,7 @@ data class SettingsDto(
     val noKeepLogin: Boolean = false,
     val wallpaperPath: String? = null,
     val fullScreen: Boolean = false,
+    val autoCheckUpdate: Boolean = true,
 )
 
 @Serializable

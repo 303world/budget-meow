@@ -47,7 +47,9 @@ import io.github.world303.budgetmeow.ui.component.MeowSwitchRow
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -55,7 +57,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val CONTACT_EMAIL = "714945046@qq.com"
-private const val ORIGINAL_SITE = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
 
 /**
  * 设置页。分组与顺序对齐网页版原版：
@@ -81,12 +82,11 @@ fun SettingsScreen(
     onEditBudget: () -> Unit,
     onClearMonth: () -> Unit,
     onResetAll: () -> Unit,
-    snackbar: SnackbarHostState,
 ) {
     val settings = profile.settings
     val context = LocalContext.current
 
-    var generalOpen by remember { mutableStateOf(true) }
+    var generalOpen by remember { mutableStateOf(false) }
     var accountOpen by remember { mutableStateOf(false) }
     var privacyOpen by remember { mutableStateOf(false) }
     var backupOpen by remember { mutableStateOf(false) }
@@ -95,8 +95,9 @@ fun SettingsScreen(
     var showRename by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    var showContact by remember { mutableStateOf(false) }
 
-    MeowPage(title = "设置", onBack = onBack, snackbar = snackbar) { padding ->
+    MeowPage(title = "设置", onBack = onBack) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -222,37 +223,6 @@ fun SettingsScreen(
                 }
                 MeowDivider()
 
-                // 主题
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "主题",
-                        style = MiuixTheme.textStyles.body1,
-                        modifier = Modifier.weight(1f),
-                    )
-                    MeowSegmented(
-                        options = listOf("默认", "喵粉"),
-                        selectedIndex = if (settings.appTheme == AppTheme.Pink) 1 else 0,
-                        onSelect = { index ->
-                            onUpdateSettings {
-                                it.copy(appTheme = if (index == 1) AppTheme.Pink else AppTheme.Default)
-                            }
-                        },
-                    )
-                }
-                MeowDivider()
-
-                MeowSwitchRow(
-                    title = "液态玻璃",
-                    summary = "顶栏、快捷按钮与计算器使用实时背景模糊",
-                    checked = settings.glassEffect,
-                    onCheckedChange = { checked -> onUpdateSettings { it.copy(glassEffect = checked) } },
-                )
-                MeowDivider()
 
                 MeowRow(
                     title = "导入壁纸",
@@ -411,16 +381,8 @@ fun SettingsScreen(
             ) {
                 MeowRow(
                     title = "联系我们",
-                    onClick = {
-                        runCatching {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_SENDTO,
-                                    Uri.parse("mailto:$CONTACT_EMAIL"),
-                                ),
-                            )
-                        }
-                    },
+                    summary = CONTACT_EMAIL,
+                    onClick = { showContact = true },
                 )
                 MeowDivider()
                 MeowRow(
@@ -431,13 +393,6 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "原网页版：$ORIGINAL_SITE",
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(horizontal = 20.dp),
-            )
         }
     }
 
@@ -471,6 +426,47 @@ fun SettingsScreen(
             },
             onDismiss = { showScheduleEditor = false },
         )
+    }
+
+    if (showContact) {
+        OverlayDialog(
+            show = true,
+            title = "联系我们",
+            summary = "有问题、想提建议、或者想反馈 bug，发邮件到下面这个地址：",
+            onDismissRequest = { showContact = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = CONTACT_EMAIL,
+                    style = MiuixTheme.textStyles.title4,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    textAlign = TextAlign.Center,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    TextButton(
+                        text = "复制邮箱",
+                        onClick = {
+                            val clipboard = context.getSystemService(
+                                android.content.Context.CLIPBOARD_SERVICE,
+                            ) as android.content.ClipboardManager
+                            clipboard.setPrimaryClip(
+                                android.content.ClipData.newPlainText("邮箱", CONTACT_EMAIL),
+                            )
+                            showContact = false
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        text = "关闭",
+                        onClick = { showContact = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                    )
+                }
+            }
+        }
     }
 
     ConfirmDialog(

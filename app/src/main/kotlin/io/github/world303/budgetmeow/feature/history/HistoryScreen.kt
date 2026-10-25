@@ -13,16 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,7 +29,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.model.BudgetRecord
+import io.github.world303.budgetmeow.core.model.BudgetSummary
 import io.github.world303.budgetmeow.core.model.RecordType
+import io.github.world303.budgetmeow.core.model.formatMoney
 import io.github.world303.budgetmeow.core.store.BudgetStore
 import io.github.world303.budgetmeow.feature.home.formatRecordTime
 import io.github.world303.budgetmeow.ui.component.ConfirmDialog
@@ -44,14 +43,18 @@ import io.github.world303.budgetmeow.ui.component.MoneyText
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.time.YearMonth
 
 fun recordLabel(type: RecordType): String = when (type) {
     RecordType.Income -> "收入"
@@ -130,9 +133,7 @@ fun RecordRow(
 
 @Composable
 private fun ChartIcon(tint: Color, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(
-        modifier = modifier.width(22.dp).height(22.dp),
-    ) {
+    Canvas(modifier = modifier.width(22.dp).height(22.dp)) {
         val barWidth = size.width * 0.2f
         val gap = size.width * 0.14f
         val heights = listOf(0.5f, 0.95f, 0.72f)
@@ -160,34 +161,39 @@ private fun SelectionDot(selected: Boolean) {
     }
 }
 
+/**
+ * 历史记录。支持翻月——换月后旧账不会被覆盖，这里能看到每个月的流水与当月预算摘要。
+ */
 @Composable
 fun HistoryScreen(
     store: BudgetStore,
     onBack: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenStats: () -> Unit,
-    snackbar: SnackbarHostState,
 ) {
-    val state by store.state.collectAsState()
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    val currentMonth = store.month
+    var month by remember { mutableStateOf(currentMonth) }
+    var records by remember { mutableStateOf<List<BudgetRecord>>(emptyList()) }
+    var summary by remember { mutableStateOf<BudgetSummary?>(null) }
 
     var selecting by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
     var editing by remember { mutableStateOf<BudgetRecord?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRevert by remember { mutableStateOf(false) }
+    var loaded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(listState, state.visibleRecords.size, state.hasMore) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
-            .collect { last ->
-                if (state.hasMore && last >= state.visibleRecords.size - 3) {
-                    store.loadMore()
-                }
-            }
+    LaunchedEffect(month, store) {
+        records = store.recordsOfMonth(month)
+        summary = store.summaryOfMonth(month)
+        loaded = true
+        selected = emptySet()
+        selecting = false
     }
 
-    val selectedRecords = state.visibleRecords.filter { it.id in selected }
+    val isCurrentMonth = month == currentMonth
+    val selectedRecords = records.filter { it.id in selected }
 
     MeowPage(
         title = if (selecting) "已选 ${selected.size} 条" else "历史记录",
@@ -199,7 +205,6 @@ fun HistoryScreen(
                 onBack()
             }
         },
-        snackbar = snackbar,
         actions = {
             if (!selecting) {
                 IconButton(onClick = onOpenStats) {
@@ -229,7 +234,7 @@ fun HistoryScreen(
                         text = "撤回",
                         onClick = { confirmRevert = true },
                         modifier = Modifier.weight(1f),
-                        enabled = selected.isNotEmpty(),
+                        enabled = selected.isNotEmpty() && isCurrentMonth,
                     )
                     TextButton(
                         text = "删除",
@@ -245,46 +250,50 @@ fun HistoryScreen(
             }
         },
     ) { padding ->
-        if (state.visibleRecords.isEmpty()) {
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                EmptyHint("本月还没有记录。\n回到首页，点「支出」记第一笔。")
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize().padding(padding),
-            ) {
-                items(state.visibleRecords, key = { it.id }) { record ->
-                    RecordRow(
-                        record = record,
-                        selected = record.id in selected,
-                        selecting = selecting,
-                        onClick = {
-                            if (selecting) {
-                                selected = if (record.id in selected) selected - record.id else selected + record.id
-                            } else {
-                                editing = record
-                            }
-                        },
-                        onLongClick = {
-                            selecting = true
-                            selected = selected + record.id
-                        },
-                    )
-                    MeowDivider()
-                }
-                if (state.hasMore) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                text = "加载中…",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            MonthHeader(
+                month = month,
+                summary = summary,
+                isCurrentMonth = isCurrentMonth,
+                onPrev = { month = YearMonth.parse(month).minusMonths(1).toString() },
+                onNext = {
+                    val next = YearMonth.parse(month).plusMonths(1).toString()
+                    if (next <= currentMonth) month = next
+                },
+            )
+
+            if (loaded && records.isEmpty()) {
+                EmptyHint(
+                    if (isCurrentMonth) {
+                        "本月还没有记录。\n回到首页，点「支出」记第一笔。"
+                    } else {
+                        "这个月没有记录。"
+                    },
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(records, key = { it.id }) { record ->
+                        RecordRow(
+                            record = record,
+                            selected = record.id in selected,
+                            selecting = selecting,
+                            onClick = {
+                                if (selecting) {
+                                    selected = if (record.id in selected) {
+                                        selected - record.id
+                                    } else {
+                                        selected + record.id
+                                    }
+                                } else {
+                                    editing = record
+                                }
+                            },
+                            onLongClick = {
+                                selecting = true
+                                selected = selected + record.id
+                            },
+                        )
+                        MeowDivider()
                     }
                 }
             }
@@ -301,7 +310,10 @@ fun HistoryScreen(
             maxLength = 50,
             onConfirm = { note ->
                 editing = null
-                scope.launch { store.updateRecordNote(editingRecord, note) }
+                scope.launch {
+                    store.updateRecordNote(editingRecord, note)
+                    records = store.recordsOfMonth(month)
+                }
             },
             onDismiss = { editing = null },
         )
@@ -318,7 +330,11 @@ fun HistoryScreen(
             val targets = selectedRecords
             selecting = false
             selected = emptySet()
-            scope.launch { store.batchDelete(targets) }
+            scope.launch {
+                store.batchDelete(targets)
+                records = store.recordsOfMonth(month)
+                summary = store.summaryOfMonth(month)
+            }
         },
         onDismiss = { confirmDelete = false },
     )
@@ -333,8 +349,97 @@ fun HistoryScreen(
             val targets = selectedRecords
             selecting = false
             selected = emptySet()
-            scope.launch { store.batchRevert(targets) }
+            scope.launch {
+                store.batchRevert(targets)
+                records = store.recordsOfMonth(month)
+                summary = store.summaryOfMonth(month)
+            }
         },
         onDismiss = { confirmRevert = false },
     )
+}
+
+@Composable
+private fun MonthHeader(
+    month: String,
+    summary: BudgetSummary?,
+    isCurrentMonth: Boolean,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        cornerRadius = 16.dp,
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onPrev) {
+                    Icon(
+                        imageVector = MiuixIcons.ChevronBackward,
+                        contentDescription = "上个月",
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+                Text(
+                    text = month,
+                    style = MiuixTheme.textStyles.headline2,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = if (isCurrentMonth) "本月" else "历史月份",
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                IconButton(onClick = onNext, enabled = !isCurrentMonth) {
+                    Icon(
+                        imageVector = MiuixIcons.ChevronForward,
+                        contentDescription = "下个月",
+                        tint = if (isCurrentMonth) {
+                            MiuixTheme.colorScheme.disabledOnSurface
+                        } else {
+                            MiuixTheme.colorScheme.onSurface
+                        },
+                    )
+                }
+            }
+            val data = summary?.data
+            if (data != null) {
+                MeowDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    MiniStat("初始预算", data.initialBudget)
+                    MiniStat("当前余额", data.currentBalance)
+                    MiniStat("结转下月", data.carryOverToNext)
+                    MiniStat("预支下月", data.advanceForNext)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniStat(label: String, value: Double) {
+    Column {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.footnote2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = "¥${value.formatMoney()}",
+            style = MiuixTheme.textStyles.footnote1,
+        )
+    }
 }

@@ -66,7 +66,6 @@ fun AccountScreen(
     onLogout: () -> Unit,
     onSyncNow: () -> Unit,
     onDeleteAccount: (String) -> Unit,
-    snackbar: SnackbarHostState,
 ) {
     var showCreate by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Profile?>(null) }
@@ -77,7 +76,7 @@ fun AccountScreen(
     var busy by remember { mutableStateOf(false) }
     var showDeleteAccount by remember { mutableStateOf(false) }
 
-    MeowPage(title = "账号", onBack = onBack, snackbar = snackbar) { padding ->
+    MeowPage(title = "账号", onBack = onBack) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

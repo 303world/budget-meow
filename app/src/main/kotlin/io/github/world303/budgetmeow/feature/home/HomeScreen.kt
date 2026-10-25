@@ -49,6 +49,7 @@ import io.github.world303.budgetmeow.feature.calculator.CalculatorSheet
 import io.github.world303.budgetmeow.feature.onboarding.InitBudgetSheet
 import io.github.world303.budgetmeow.ui.component.ConfirmDialog
 import io.github.world303.budgetmeow.ui.component.InputDialog
+import io.github.world303.budgetmeow.ui.component.MeowToast
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowRow
 import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
@@ -101,7 +102,6 @@ fun HomeScreen(
     onHeaderModeChange: (HeaderDisplayMode) -> Unit,
     cloudLoggedIn: Boolean,
     onSyncNow: () -> Unit,
-    snackbar: SnackbarHostState,
 ) {
     val state by store.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -118,7 +118,7 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         store.messages.collect { msg ->
-            snackbar.showSnackbar(msg.text)
+            MeowToast.show(msg.text)
         }
     }
 
@@ -138,7 +138,8 @@ fun HomeScreen(
         ?: "出行"
 
     val backdrop = LocalMeowBackdrop.current
-    val glass = settings.glassEffect
+    // 玻璃效果固定开启（开关已从设置里移除）
+    val glass = true
 
     Box(modifier = Modifier.fillMaxSize()) {
         MeowWallpaperBackground(
@@ -152,7 +153,7 @@ fun HomeScreen(
         )
         Scaffold(
             containerColor = Color.Transparent,
-            snackbarHost = { SnackbarHost(snackbar) },
+            
         ) { padding ->
         Column(
             modifier = Modifier
@@ -319,7 +320,7 @@ fun HomeScreen(
             onClick = {
                 showMoreMenu = false
                 if (state.activeTrip != null) {
-                    scope.launch { snackbar.showSnackbar("正在出行中") }
+                    scope.launch { MeowToast.show("正在出行中") }
                 } else {
                     calcType = RecordType.TripStart
                 }

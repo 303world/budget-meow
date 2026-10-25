@@ -53,7 +53,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun MeowPage(
     title: String,
     onBack: (() -> Unit)? = null,
-    snackbar: SnackbarHostState? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -77,7 +76,7 @@ fun MeowPage(
             )
         },
         bottomBar = bottomBar,
-        snackbarHost = { snackbar?.let { SnackbarHost(it) } },
+        
         content = content,
     )
 }

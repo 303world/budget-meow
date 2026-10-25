@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +37,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -160,7 +164,7 @@ fun CalculatorSheet(
             TextField(
                 value = note,
                 onValueChange = { note = it.take(MAX_NOTE_LENGTH) },
-                label = "备注（可选，最多 $MAX_NOTE_LENGTH 字）",
+                label = "备注",
                 useLabelAsPlaceholder = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -250,6 +254,8 @@ private fun ExpressionDisplay(
     var magnifierX by remember { mutableStateOf<Float?>(null) }
     val primary = MiuixTheme.colorScheme.primary
     val textStyle = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
+    val view = LocalView.current
+    val density = LocalDensity.current
     val cursorAlpha by rememberInfiniteTransition().animateFloat(
         initialValue = 1f,
         targetValue = 0f,
@@ -286,16 +292,21 @@ private fun ExpressionDisplay(
                     .pointerInput(isEmpty) {
                         detectTapGestures { offset ->
                             layout?.let { l ->
-                                onCursorChange(l.getOffsetForPosition(offset).coerceIn(0, l.layoutInput.text.length))
+                                onCursorChange(
+                                    l.getOffsetForPosition(offset).coerceIn(0, l.layoutInput.text.length),
+                                )
                             }
                         }
                     }
                     .pointerInput(isEmpty) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = { offset ->
+                                view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                                 magnifierX = offset.x
                                 layout?.let { l ->
-                                    onCursorChange(l.getOffsetForPosition(offset).coerceIn(0, l.layoutInput.text.length))
+                                    onCursorChange(
+                                        l.getOffsetForPosition(offset).coerceIn(0, l.layoutInput.text.length),
+                                    )
                                 }
                             },
                             onDrag = { change, _ ->
@@ -312,18 +323,6 @@ private fun ExpressionDisplay(
                         )
                     },
             ) {
-                if (isEmpty) {
-                    Text(
-                        text = "输入金额或算式，长按可放大调光标",
-                        style = MiuixTheme.textStyles.footnote2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopStart),
-                    )
-                }
-
-                // 预览放在同一张卡片的上沿，空出来的高度正好给放大镜
                 if (previewText.isNotEmpty()) {
                     Text(
                         text = previewText,
@@ -349,12 +348,10 @@ private fun ExpressionDisplay(
                     onTextLayout = { layout = it },
                 )
 
-                // 光标：直接画在文字排版结果上，位置精确到像素
                 val textLayout = layout
                 if (textLayout != null) {
-                    // 布局可能还是上一帧的（长度更短），必须按布局自己的长度夹取，否则越界崩溃
-                    val layoutLength = textLayout.layoutInput.text.length
-                    val safeCursor = state.cursor.coerceIn(0, layoutLength)
+                    // 布局可能落后一帧，必须按布局自身长度夹取，否则越界崩溃
+                    val safeCursor = state.cursor.coerceIn(0, textLayout.layoutInput.text.length)
                     val cursorRect = textLayout.getCursorRect(safeCursor)
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val barWidth = 2.dp.toPx()
@@ -367,37 +364,44 @@ private fun ExpressionDisplay(
                     }
                 }
 
-                // 放大镜：长按后出现在表达式上方，跟着手指横向移动
+                // 真放大镜：用同一份排版结果放大 s 倍，并把光标点平移到圆心
                 val mx = magnifierX
                 if (mx != null && textLayout != null) {
-                    val size = 76.dp
-                    val layoutLength = textLayout.layoutInput.text.length
-                    val safeCursor = state.cursor.coerceIn(0, layoutLength)
+                    val scale = 1.9f
+                    val loupe = 84.dp
+                    val radiusPx = with(density) { (loupe / 2).toPx() }
+                    val safeCursor = state.cursor.coerceIn(0, textLayout.layoutInput.text.length)
                     val cursorRect = textLayout.getCursorRect(safeCursor)
+                    val cursorCenterX = cursorRect.left + cursorRect.width / 2f
+                    val cursorCenterY = cursorRect.height / 2f
+
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .offset {
-                                val halfPx = size.toPx() / 2
-                                val maxPx = (containerWidth.toPx() - size.toPx()).coerceAtLeast(0f)
-                                IntOffset((mx - halfPx).coerceIn(0f, maxPx).roundToInt(), 0)
+                                val half = loupe.toPx() / 2
+                                val maxX = (containerWidth.toPx() - loupe.toPx()).coerceAtLeast(0f)
+                                IntOffset((mx - half).coerceIn(0f, maxX).roundToInt(), 0)
                             }
-                            .size(size)
+                            .size(loupe)
                             .clip(CircleShape)
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                            .border(1.5.dp, MiuixTheme.colorScheme.outline, CircleShape),
+                            .border(1.dp, MiuixTheme.colorScheme.outline, CircleShape),
                     ) {
-                        val scale = 1.6f
                         Text(
                             text = annotated,
                             style = textStyle,
                             maxLines = 1,
-                            modifier = Modifier.graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = size.toPx() / 2 - cursorRect.left * scale
-                                translationY = size.toPx() / 2 - cursorRect.height * scale / 2
-                            },
+                            textAlign = TextAlign.End,
+                            modifier = Modifier
+                                .width(containerWidth)
+                                .graphicsLayer {
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                    scaleX = scale
+                                    scaleY = scale
+                                    translationX = radiusPx - cursorCenterX * scale
+                                    translationY = radiusPx - cursorCenterY * scale
+                                },
                         )
                     }
                 }

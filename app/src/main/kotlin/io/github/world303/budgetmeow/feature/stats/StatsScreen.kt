@@ -52,7 +52,6 @@ import java.time.LocalDate
 fun StatsScreen(
     store: BudgetStore,
     onBack: () -> Unit,
-    snackbar: SnackbarHostState,
 ) {
     val scope = rememberCoroutineScope()
     var tab by remember { mutableIntStateOf(0) }
@@ -73,7 +72,6 @@ fun StatsScreen(
     MeowPage(
         title = "统计",
         onBack = onBack,
-        snackbar = snackbar,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(

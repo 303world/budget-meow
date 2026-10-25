@@ -983,6 +983,24 @@ class BudgetStore(
         message("出行次数已校准", MessageKind.Success)
     }
 
+    // ---------------------------------------------------------------- 跨月查看
+
+    /** 指定月份的全部流水（含更早的月份，用于历史页翻月） */
+    suspend fun recordsOfMonth(month: String): List<BudgetRecord> = mutex.withLock {
+        dataset.recordsOf(month)
+    }
+
+    suspend fun summaryOfMonth(month: String): BudgetSummary? = mutex.withLock {
+        dataset.summaryOf(month)
+    }
+
+    /** 有数据的月份，倒序 */
+    suspend fun availableMonths(): List<String> = mutex.withLock {
+        (dataset.summaries.map { it.data.month } + dataset.records.map { it.data.month })
+            .distinct()
+            .sortedDescending()
+    }
+
     /** 供备份导出使用：直接给出一份数据快照 */
     suspend fun snapshot(): BudgetDataset = mutex.withLock { dataset }
 

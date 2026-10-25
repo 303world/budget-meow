@@ -52,7 +52,6 @@ private val dayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-
 fun SearchScreen(
     store: BudgetStore,
     onBack: () -> Unit,
-    snackbar: SnackbarHostState,
 ) {
     val scope = rememberCoroutineScope()
     var keyword by remember { mutableStateOf("") }
@@ -92,7 +91,6 @@ fun SearchScreen(
     MeowPage(
         title = "搜索记录",
         onBack = onBack,
-        snackbar = snackbar,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.padding(horizontal = 12.dp)) {
