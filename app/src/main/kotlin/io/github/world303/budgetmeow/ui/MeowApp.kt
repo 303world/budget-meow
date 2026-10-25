@@ -66,6 +66,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -275,11 +276,15 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
     var editBudget by remember { mutableStateOf(false) }
 
     val backdrop = rememberLayerBackdrop()
+    val pageBackdrop = rememberLayerBackdrop()
 
     val eula = remember { EulaStore(context) }
     var consentAccepted by remember { mutableStateOf(eula.hasAccepted()) }
 
-    CompositionLocalProvider(LocalMeowBackdrop provides backdrop) {
+    CompositionLocalProvider(
+        LocalMeowBackdrop provides backdrop,
+        LocalMeowPageBackdrop provides pageBackdrop,
+    ) {
     MeowTheme(settings = profile.settings, darkOverride = darkOverride) {
         if (!consentAccepted) {
             ConsentScreen(
