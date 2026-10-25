@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -396,7 +396,8 @@ private fun ExpressionDisplay(
                             maxLines = 1,
                             textAlign = TextAlign.End,
                             modifier = Modifier
-                                .width(containerWidth)
+                                // requiredWidth：必须突破放大镜 84dp 的父约束，否则文字会被压成窄条
+                                .requiredWidth(containerWidth)
                                 .graphicsLayer {
                                     transformOrigin = TransformOrigin(0f, 0f)
                                     scaleX = scale
