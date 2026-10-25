@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.store.MessageKind
 import androidx.compose.ui.graphics.luminance
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import io.github.world303.budgetmeow.ui.theme.LocalMeowPageBackdrop
+import io.github.world303.budgetmeow.ui.theme.MeowGlassTone
 import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -94,17 +94,8 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                         // 否则在圆角里会出现一圈像"内嵌方块"的亮边
                         .meowGlassSurface(
                             shape = RoundedCornerShape(18.dp),
-                            enabled = true,
-                            // 着色要给到能看出"玻璃凝住"的程度：太薄就变成一块灰雾
-                            blurRadius = 26f,
-                            tintColor = MiuixTheme.colorScheme.surface,
-                            tintAlpha = if (dark) 0.46f else 0.55f,
+                            tone = MeowGlassTone.Pured,
                             backdropOverride = LocalMeowPageBackdrop.current,
-                            highlight = if (dark) {
-                                Highlight.GlassStrokeSmallDark
-                            } else {
-                                Highlight.GlassStrokeSmallLight
-                            },
                         )
                         .padding(horizontal = 18.dp, vertical = 11.dp),
                 ) {

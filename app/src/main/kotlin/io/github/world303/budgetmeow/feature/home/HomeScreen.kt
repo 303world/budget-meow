@@ -512,7 +512,7 @@ private fun HeaderPill(
 ) {
     Box(
         modifier = Modifier
-            .meowGlassSurface(RoundedCornerShape(22.dp), enabled = glass, blurRadius = 22f)
+            .meowGlassSurface(RoundedCornerShape(22.dp), enabled = glass)
             .pointerInput(text) {
                 detectTapGestures(
                     onTap = { onClick() },
@@ -579,7 +579,7 @@ private fun QuickAction(
 ) {
     Box(
         modifier = modifier
-            .meowGlassSurface(RoundedCornerShape(18.dp), enabled = glass, blurRadius = 20f)
+            .meowGlassSurface(RoundedCornerShape(18.dp), enabled = glass)
             .clickable(onClick = onClick),
     ) {
         Column(

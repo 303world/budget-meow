@@ -61,6 +61,7 @@ import io.github.world303.budgetmeow.core.model.formatMoney
 import io.github.world303.budgetmeow.core.model.round2
 import io.github.world303.budgetmeow.ui.component.ConfirmDialog
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
+import io.github.world303.budgetmeow.ui.theme.MeowGlassTone
 import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
@@ -139,8 +140,7 @@ fun CalculatorSheet(
                     if (glassEffect) {
                         Modifier.meowGlassSurface(
                             shape = RoundedCornerShape(26.dp),
-                            enabled = true,
-                            blurRadius = 30f,
+                            tone = MeowGlassTone.Colored,
                         )
                     } else {
                         Modifier

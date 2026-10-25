@@ -17,7 +17,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
+import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -40,57 +41,97 @@ val LocalMeowPageBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 @Composable
 fun rememberBlurSupported(): Boolean = remember { isRuntimeShaderSupported() }
 
+/**
+ * 玻璃材质的配方，**全部照抄 miuix 官方示例的 ColorBlendToken**
+ * （compose-miuix-ui/miuix，example/.../component/blend/ColorBlendToken.kt，Apache-2.0）。
+ *
+ * 为什么不自创：这些配方是「颜色 + 混合模式」的组合（Overlay / HardLight / ColorBurn…），
+ * 只用「白色 + 透明度」调不出玻璃的质感，最后只会得到一块灰雾。
+ */
+object MeowGlassTokens {
+
+    /** 中性玻璃：小胶囊、按钮这类小面积元素 */
+    val PuredRegularLight = listOf(
+        BlendColorEntry(Color(0x340034F9), BlurBlendMode.Overlay),
+        BlendColorEntry(Color(0xB3FFFFFF), BlurBlendMode.HardLight),
+    )
+    val PuredRegularDark = listOf(
+        BlendColorEntry(Color(0x75000000), BlurBlendMode.ColorBurn),
+        BlendColorEntry(Color(0x52000000), BlurBlendMode.SrcOver),
+    )
+
+    /** 更淡一档：需要透出更多背景时用 */
+    val ThinLight = listOf(
+        BlendColorEntry(Color(0x307A7A7A), BlurBlendMode.PlusLighter),
+        BlendColorEntry(Color(0x5EFFFFFF), BlurBlendMode.PlusLighter),
+        BlendColorEntry(Color(0x66FF6666), BlurBlendMode.SrcOver),
+    )
+    val ThinDark = listOf(
+        BlendColorEntry(Color(0x969C9C9C), BlurBlendMode.PlusDarker),
+        BlendColorEntry(Color(0x66000000), BlurBlendMode.SrcOver),
+    )
+
+    /** 带一点灰彩的大面积玻璃：计算器面板这类 */
+    val ColoredRegularLight = listOf(
+        BlendColorEntry(Color(0x803F3F3F), BlurBlendMode.Overlay),
+        BlendColorEntry(Color(0x1CE6E6E6), BlurBlendMode.PlusLighter),
+    )
+    val ColoredRegularDark = listOf(
+        BlendColorEntry(Color(0x70000000), BlurBlendMode.Overlay),
+        BlendColorEntry(Color(0x14000000), BlurBlendMode.SrcOver),
+    )
+}
+
+/** 玻璃档位：只有三档，避免每个调用点各写一套数字 */
+enum class MeowGlassTone {
+    /** 小胶囊、快捷按钮 */
+    Pured,
+
+    /** 提示条：要透一点但字要清楚 */
+    Thin,
+
+    /** 大面板：计算器 */
+    Colored,
+}
+
 @Composable
 fun Modifier.meowGlassSurface(
     shape: Shape,
-    enabled: Boolean,
-    blurRadius: Float = 26f,
-    tintColor: Color = MiuixTheme.colorScheme.surfaceContainer,
-    tintAlpha: Float? = null,
-    showHighlight: Boolean = true,
-    highlight: Highlight? = null,
+    enabled: Boolean = true,
+    tone: MeowGlassTone = MeowGlassTone.Pured,
     backdropOverride: LayerBackdrop? = null,
 ): Modifier {
-    if (!enabled) return background(tintColor, shape).clip(shape)
+    val fallback = MiuixTheme.colorScheme.surfaceContainer
+    if (!enabled) return background(fallback, shape).clip(shape)
 
     val backdrop = backdropOverride ?: LocalMeowBackdrop.current
-    val supported = rememberBlurSupported()
-    val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
+    if (backdrop == null || !rememberBlurSupported()) {
+        // 没有 RuntimeShader 时退化成实心卡片色，至少保证可读
+        return background(fallback, shape).clip(shape)
+    }
 
-    if (backdrop == null || !supported) {
-        return background(tintColor.copy(alpha = tintAlpha ?: if (dark) 0.55f else 0.72f), shape).clip(shape)
+    val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
+    val blend = when (tone) {
+        MeowGlassTone.Pured -> if (dark) MeowGlassTokens.PuredRegularDark else MeowGlassTokens.PuredRegularLight
+        MeowGlassTone.Thin -> if (dark) MeowGlassTokens.ThinDark else MeowGlassTokens.ThinLight
+        MeowGlassTone.Colored -> if (dark) MeowGlassTokens.ColoredRegularDark else MeowGlassTokens.ColoredRegularLight
     }
 
     return this
         .textureBlur(
             backdrop = backdrop,
             shape = shape,
-            blurRadius = blurRadius,
-            noiseCoefficient = 0.008f,
-            colors = BlurColors(
-                blendColors = listOf(
-                    BlendColorEntry(
-                        tintColor.copy(alpha = tintAlpha ?: if (dark) 0.30f else 0.52f),
-                    ),
-                ),
-                brightness = if (dark) 0.05f else 0.04f,
-                contrast = 1.02f,
-                saturation = 1.18f,
-            ),
-            highlight = when {
-                !showHighlight -> null
-                highlight != null -> highlight
-                dark -> Highlight.GlassStrokeMiddleDark
-                else -> Highlight.GlassStrokeMiddleLight
-            },
+            // 模糊半径与噪声都用库默认值，不自己发明
+            colors = BlurDefaults.blurColors(blendColors = blend),
+            highlight = if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight,
         )
         .clip(shape)
 }
 
 /**
- * 壁纸平均亮度（0 暗 ~ 1 亮），用于自动选择文字颜色。
+ * 壁纸平均亮度（0 暗 ~ 1 亮），用于自动选择前景文字颜色。
  *
- * 为什么要这么做：给壁纸压一层黑/白蒙层会改变壁纸本身的颜色（用户明确不接受）。
+ * 为什么不给壁纸蒙一层黑/白：那会改变壁纸本身的颜色（用户明确不接受）。
  * 更好的办法是壁纸不动，按它的明暗切换前景文字的黑白，再配一层反向投影兜底。
  */
 @Composable
