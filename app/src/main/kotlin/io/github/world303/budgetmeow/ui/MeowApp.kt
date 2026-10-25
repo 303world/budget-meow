@@ -536,12 +536,15 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
                 maxLength = 12,
                 keyboardType = KeyboardType.Decimal,
                 onConfirm = { value ->
-                    editBudget = false
                     val amount = value.toDoubleOrNull()
-                    if (amount != null && amount > 0) {
-                        scope.launch { store.updateInitialBudget(amount) }
-                    } else {
-                        scope.launch { MeowToast.show("请输入大于 0 的金额") }
+                    when {
+                        // 校验没过就不关窗，避免「看起来改成功了」
+                        amount == null || amount <= 0 -> MeowToast.show("请输入大于 0 的金额")
+                        amount > MAX_MONTHLY_BUDGET -> MeowToast.warning(BUDGET_LIMIT_JOKE)
+                        else -> {
+                            editBudget = false
+                            scope.launch { store.updateInitialBudget(amount) }
+                        }
                     }
                 },
                     onDismiss = { editBudget = false },
