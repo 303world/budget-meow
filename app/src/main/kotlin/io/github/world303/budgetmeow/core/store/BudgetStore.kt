@@ -6,6 +6,8 @@ import io.github.world303.budgetmeow.core.model.BudgetRecordData
 import io.github.world303.budgetmeow.core.model.BudgetSummary
 import io.github.world303.budgetmeow.core.model.BudgetSummaryData
 import io.github.world303.budgetmeow.core.model.Ids
+import io.github.world303.budgetmeow.core.model.BUDGET_LIMIT_JOKE
+import io.github.world303.budgetmeow.core.model.MAX_MONTHLY_BUDGET
 import io.github.world303.budgetmeow.core.model.MonthKey
 import io.github.world303.budgetmeow.core.model.MonthPoint
 import io.github.world303.budgetmeow.core.model.MonthStats
@@ -133,6 +135,10 @@ class BudgetStore(
     suspend fun setInitialBudget(amount: Double) = mutex.withLock {
         if (amount <= 0) {
             message("预算金额必须大于 0", MessageKind.Warning)
+            return@withLock
+        }
+        if (amount > MAX_MONTHLY_BUDGET) {
+            message(BUDGET_LIMIT_JOKE, MessageKind.Warning)
             return@withLock
         }
         if (dataset.summaryOf(currentMonth) != null) {
@@ -785,6 +791,10 @@ class BudgetStore(
         val summary = dataset.summaryOf(currentMonth) ?: return@withLock
         if (newAmount <= 0) {
             message("预算金额必须大于 0", MessageKind.Warning)
+            return@withLock
+        }
+        if (newAmount > MAX_MONTHLY_BUDGET) {
+            message(BUDGET_LIMIT_JOKE, MessageKind.Warning)
             return@withLock
         }
         val diff = (newAmount - summary.data.initialBudget).round2()

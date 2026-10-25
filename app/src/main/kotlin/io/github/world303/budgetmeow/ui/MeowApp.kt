@@ -36,6 +36,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import io.github.world303.budgetmeow.AppContainer
 import io.github.world303.budgetmeow.core.backup.BackupService
 import io.github.world303.budgetmeow.core.model.MeowSettings
+import io.github.world303.budgetmeow.core.model.BUDGET_LIMIT_JOKE
+import io.github.world303.budgetmeow.core.model.MAX_MONTHLY_BUDGET
 import io.github.world303.budgetmeow.core.model.ThemeMode
 import io.github.world303.budgetmeow.core.update.UpdateChecker
 import io.github.world303.budgetmeow.core.update.UpdateInfo

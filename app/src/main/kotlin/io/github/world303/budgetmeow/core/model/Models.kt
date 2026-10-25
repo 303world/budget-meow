@@ -229,3 +229,10 @@ fun Double.formatSigned(): String {
     val sign = if (this > 0) "+" else if (this < 0) "-" else ""
     return sign + abs(this).formatMoney()
 }
+
+
+/** 月度预算上限。到这一步，记账软件已经不是最缺的东西了 */
+const val MAX_MONTHLY_BUDGET = 10_000_000.0
+
+/** 超上限时的提示，两个入口共用一句，避免口径不一致 */
+const val BUDGET_LIMIT_JOKE = "预算上限是一千万 —— 到这个数，你大概已经不需要这款软件了 😹"

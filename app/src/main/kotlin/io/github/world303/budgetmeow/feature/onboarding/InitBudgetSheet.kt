@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import io.github.world303.budgetmeow.core.model.BUDGET_LIMIT_JOKE
+import io.github.world303.budgetmeow.core.model.MAX_MONTHLY_BUDGET
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowRow
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
@@ -70,6 +72,12 @@ fun InitBudgetSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text(
+                text = "上限 ¥10,000,000",
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             if (error != null) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
@@ -83,6 +91,7 @@ fun InitBudgetSheet(
                 onClick = {
                     when {
                         amount == null || amount <= 0 -> error = "请输入大于 0 的金额"
+                        amount > MAX_MONTHLY_BUDGET -> error = BUDGET_LIMIT_JOKE
                         else -> onConfirm(amount)
                     }
                 },
