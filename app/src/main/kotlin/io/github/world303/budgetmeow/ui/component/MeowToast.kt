@@ -85,13 +85,7 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                     dark -> androidx.compose.ui.graphics.Color.White
                     else -> androidx.compose.ui.graphics.Color(0xFF1B1B1F)
                 }
-                val textStyle = MiuixTheme.textStyles.footnote1.copy(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = if (dark) 0.55f else 0.28f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 1f),
-                        blurRadius = 6f,
-                    ),
-                )
+                val textStyle = MiuixTheme.textStyles.footnote1
                 Box(
                     modifier = Modifier
                         // 落在顶栏下方，不压住首页那排按钮，也不至于盖住正文
@@ -101,10 +95,10 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                         .meowGlassSurface(
                             shape = RoundedCornerShape(18.dp),
                             enabled = true,
-                            // 模糊给足，着色给薄：白底一重就会把壁纸糊成灰白
-                            blurRadius = 30f,
+                            // 着色要给到能看出"玻璃凝住"的程度：太薄就变成一块灰雾
+                            blurRadius = 26f,
                             tintColor = MiuixTheme.colorScheme.surface,
-                            tintAlpha = if (dark) 0.34f else 0.26f,
+                            tintAlpha = if (dark) 0.46f else 0.55f,
                             backdropOverride = LocalMeowPageBackdrop.current,
                             highlight = if (dark) {
                                 Highlight.GlassStrokeSmallDark

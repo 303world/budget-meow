@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-const val APP_VERSION = "1.4.2"
+const val APP_VERSION = "1.4.3"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
 const val RELEASES_URL = "https://github.com/303world/budget-meow/releases/latest"
 const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
