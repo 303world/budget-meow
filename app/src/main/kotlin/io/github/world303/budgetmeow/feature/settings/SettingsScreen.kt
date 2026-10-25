@@ -57,7 +57,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val CONTACT_EMAIL = "714945046@qq.com"
+private const val CONTACT_QQ_GROUP = "1007467322"
 
 /**
  * 设置页。分组与顺序对齐网页版原版：
@@ -382,7 +382,7 @@ fun SettingsScreen(
             ) {
                 MeowRow(
                     title = "联系我们",
-                    summary = CONTACT_EMAIL,
+                    summary = "QQ 群：$CONTACT_QQ_GROUP",
                     onClick = { showContact = true },
                 )
                 MeowDivider()
@@ -433,12 +433,12 @@ fun SettingsScreen(
         OverlayDialog(
             show = true,
             title = "联系我们",
-            summary = "有问题、想提建议、或者想反馈 bug，发邮件到下面这个地址：",
+            summary = "有问题、想提建议、或者想反馈 bug，欢迎加 QQ 群：",
             onDismissRequest = { showContact = false },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = CONTACT_EMAIL,
+                    text = "QQ 群 $CONTACT_QQ_GROUP",
                     style = MiuixTheme.textStyles.title4,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -447,13 +447,13 @@ fun SettingsScreen(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     TextButton(
-                        text = "复制邮箱",
+                        text = "复制群号",
                         onClick = {
                             val clipboard = context.getSystemService(
                                 android.content.Context.CLIPBOARD_SERVICE,
                             ) as android.content.ClipboardManager
                             clipboard.setPrimaryClip(
-                                android.content.ClipData.newPlainText("邮箱", CONTACT_EMAIL),
+                                android.content.ClipData.newPlainText("QQ群", CONTACT_QQ_GROUP),
                             )
                             showContact = false
                         },
