@@ -21,7 +21,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.store.MessageKind
+import androidx.compose.ui.graphics.luminance
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -55,6 +57,7 @@ object MeowToast {
 
 @Composable
 fun MeowToastHost(modifier: Modifier = Modifier) {
+    val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
     var current by remember { mutableStateOf<MeowToast.Message?>(null) }
     var visible by remember { mutableStateOf(false) }
 
@@ -92,8 +95,13 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                             enabled = true,
                             blurRadius = 24f,
                             tintColor = MiuixTheme.colorScheme.surface,
-                            tintAlpha = 0.72f,
-                            showHighlight = false,
+                            tintAlpha = 0.64f,
+                            // 提示条小，用最细的一档描边，既有一圈受光又不至于糊成一圈亮边
+                            highlight = if (dark) {
+                                Highlight.GlassStrokeSmallDark
+                            } else {
+                                Highlight.GlassStrokeSmallLight
+                            },
                         )
                         .padding(horizontal = 18.dp, vertical = 11.dp),
                 ) {
