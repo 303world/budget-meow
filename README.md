@@ -2,7 +2,14 @@
 
 <img src="docs/icon.png" width="96" align="right" alt="预算喵图标" />
 
-计算器优先的预算记账 App，Android 原生，界面用 [Miuix](https://github.com/compose-miuix-ui/miuix)（HyperOS 风格）重写。
+给大学生管生活费的预算记账 App。先把每月生活费定下来，每花一笔就从里面扣；
+记账入口是一台能算式的计算器，而不是一个输入框。Android 原生，界面用
+[Miuix](https://github.com/compose-miuix-ui/miuix)（HyperOS 风格）重写。
+
+- **Android 版（优先维护）**：[Releases](https://github.com/303world/budget-meow/releases/latest)
+- **网页版（已停止维护）**：<https://app-1778154199542-u11q8myzx-default.tacore.ai/>
+- 两版数据**不互通**；网页版导出的 JSON 可以在 App 的「设置 → 备份 → 恢复数据」里导入。
+- 可以纯离线用，也可以登录同步；有服务器能力的可以照 `server/` 自建后台。
 
 记一笔账不是填一个输入框，而是按一台计算器：`1200/3+58` 直接算出该记多少；长按表达式出现放大镜，配光标把数字改到某一位。数据默认只在本机，登录后可在多台设备间按记录合并同步。
 
@@ -12,6 +19,8 @@
 
 > 起点是作者早年写的一版网页应用（React + MobX + Dexie）。这一版把功能逐项搬到 Android，
 > 并修掉了原版几处记账口径问题——详见[记账口径](#记账口径)。
+>
+> 界面与液态玻璃的实现参考了 [NexioSchedule](https://github.com/HaoZai000/NexioSchedule)（课程表 App），特此致谢。
 
 ---
 
@@ -31,8 +40,8 @@
 
 **外观**
 
-- 默认 / 喵粉两套配色，浅色 / 深色 / 定时深色
-- **液态玻璃**：顶栏药丸、四个快捷按钮、计算器面板都是实时背景模糊 + 受光描边
+- 浅色 / 深色 / 定时深色
+- **液态玻璃**：顶栏药丸、四个快捷按钮、计算器面板、顶部提示条都是实时背景模糊 + 受光描边（固定开启）
 - 支持导入壁纸（玻璃才有东西可模糊）、粗体字、全屏模式、自定义顶栏标题
 - 应用图标是猫 + 猪的插画，`tools/make_icon.py` 可从原图一键重新生成
 
@@ -182,8 +191,10 @@ wrangler deploy
 
 - [x] v1.0 完整离线记账
 - [x] v1.1 在线账号与跨设备同步
+- [x] v1.2 界面与文案按「大学生生活费预算」定位重写；历史支持翻月；顶部提示条
 - [ ] 改密码 / 多设备管理界面化
 - [ ] CSV 导出、更多统计维度
+- [ ] 检查更新支持在应用内下载安装
 - [ ] iOS（Compose Multiplatform 化）
 
 ## 许可
@@ -194,6 +205,7 @@ GPL-3.0。分发衍生作品时必须以同一协议开源，且不提供担保�
 
 ## 致谢
 
+- [NexioSchedule](https://github.com/HaoZai000/NexioSchedule) —— 课程表 App，本项目的界面结构与液态玻璃参考
 - [Miuix](https://github.com/compose-miuix-ui/miuix) —— HyperOS 风格 Compose 组件库，本项目的界面骨架
 - [kyant backdrop](https://github.com/Kyant0/AndroidLiquidGlass) —— 液态玻璃的先行实现，Miuix 的模糊模块与之同源
 - 以及 Kotlin、Compose、kotlinx.coroutines、kotlinx.serialization（均为 Apache-2.0）

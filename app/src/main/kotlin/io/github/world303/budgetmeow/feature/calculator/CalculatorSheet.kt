@@ -355,9 +355,11 @@ private fun ExpressionDisplay(
                     val cursorRect = textLayout.getCursorRect(safeCursor)
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val barWidth = 2.dp.toPx()
+                        // Canvas 铺满整张卡片，而文字是底部对齐的，要补上文本的纵向偏移
+                        val textTop = (size.height - textLayout.size.height).coerceAtLeast(0f)
                         drawRoundRect(
                             color = primary.copy(alpha = cursorAlpha),
-                            topLeft = Offset(cursorRect.left - barWidth / 2, cursorRect.top),
+                            topLeft = Offset(cursorRect.left - barWidth / 2, textTop + cursorRect.top),
                             size = Size(barWidth, cursorRect.height),
                             cornerRadius = CornerRadius(barWidth / 2),
                         )

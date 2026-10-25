@@ -93,7 +93,7 @@ fun AccountScreen(
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     if (syncState.loggedIn) {
-                        Text(text = "云端账号", style = MiuixTheme.textStyles.headline2)
+                        Text(text = "云端账号（当前这本账）", style = MiuixTheme.textStyles.headline2)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = syncState.email.orEmpty(),
@@ -131,10 +131,10 @@ fun AccountScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
-                        Text(text = "登录云端账号", style = MiuixTheme.textStyles.headline2)
+                        Text(text = "登录云端账号（同步当前这本账）", style = MiuixTheme.textStyles.headline2)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "登录后，这台设备和其它设备之间会按记录自动合并；不登录就纯离线，功能一模一样。",
+                            text = "登录后，这台设备和其它设备之间会按记录自动合并；不登录也能完整记账。同步只针对当前这本账，其它本机账本不受影响。",
                             style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
@@ -213,7 +213,7 @@ fun AccountScreen(
             ) {
                 Column {
                     Text(
-                        text = "本机配置档",
+                        text = "本机账本（互不相通）",
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.padding(start = 16.dp, top = 14.dp, bottom = 6.dp),
@@ -231,7 +231,7 @@ fun AccountScreen(
                     }
                     MeowDivider()
                     MeowRow(
-                        title = "新建配置档",
+                        title = "新建本机账本",
                         summary = "比如「家庭账本」「旅行专项」",
                         showArrow = true,
                         onClick = { showCreate = true },
@@ -241,7 +241,7 @@ fun AccountScreen(
                         if (active != null) {
                             MeowDivider()
                             MeowRow(
-                                title = "删除当前配置档",
+                                title = "删除当前本机账本",
                                 summary = "连同「${active.nickname}」的账目一起删除",
                                 onClick = { pendingDelete = active },
                             )
@@ -252,7 +252,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "同步只在登录后发生；不登录时 App 不会发出任何网络请求。",
+                text = "本机账本用来看不同的账，云端账号用来跨设备同步；两者互不影响。",
                 style = MiuixTheme.textStyles.footnote2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.padding(horizontal = 20.dp),
@@ -278,7 +278,7 @@ fun AccountScreen(
     if (showCreate) {
         InputDialog(
             show = true,
-            title = "新建配置档",
+            title = "新建本机账本",
             initialValue = "",
             placeholder = "账本名称，最多 10 字",
             maxLength = 10,

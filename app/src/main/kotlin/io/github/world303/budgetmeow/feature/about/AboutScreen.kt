@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-const val APP_VERSION = "1.1.1"
+const val APP_VERSION = "1.2.0"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
 const val RELEASES_URL = "https://github.com/303world/budget-meow/releases/latest"
 const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
@@ -155,7 +155,7 @@ fun AboutScreen(
                 MeowDivider()
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "网页版与 App 的数据**不互通**：网页版已停止维护，推荐直接用 App。\n" +
+                        text = "网页版与 App 的数据不互通：网页版已停止维护，推荐直接用 App。\n" +
                             "如果想把手上的网页版数据搬过来，可以在网页版导出 JSON，再在 App 的「设置 → 备份 → 恢复数据」里导入。",
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
