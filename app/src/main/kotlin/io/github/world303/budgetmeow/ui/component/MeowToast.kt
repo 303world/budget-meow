@@ -24,6 +24,7 @@ import io.github.world303.budgetmeow.core.store.MessageKind
 import androidx.compose.ui.graphics.luminance
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import io.github.world303.budgetmeow.ui.theme.LocalMeowPageBackdrop
 import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -104,6 +105,7 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                             blurRadius = 30f,
                             tintColor = MiuixTheme.colorScheme.surface,
                             tintAlpha = if (dark) 0.34f else 0.26f,
+                            backdropOverride = LocalMeowPageBackdrop.current,
                             highlight = if (dark) {
                                 Highlight.GlassStrokeSmallDark
                             } else {

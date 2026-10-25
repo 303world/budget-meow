@@ -30,6 +30,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 val LocalMeowBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
+/**
+ * 「页面内容」的快照。提示条这类浮层要模糊的是当前页面，
+ * 而不是首页壁纸——首页不在组合里时，拿壁纸那层会采到失效内容（渲染成黑灰块）。
+ */
+val LocalMeowPageBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+
 /** 真正的背景模糊需要 RuntimeShader（Android 12+）；不支持时退化成半透明色块 */
 @Composable
 fun rememberBlurSupported(): Boolean = remember { isRuntimeShaderSupported() }
@@ -43,10 +49,11 @@ fun Modifier.meowGlassSurface(
     tintAlpha: Float? = null,
     showHighlight: Boolean = true,
     highlight: Highlight? = null,
+    backdropOverride: LayerBackdrop? = null,
 ): Modifier {
     if (!enabled) return background(tintColor, shape).clip(shape)
 
-    val backdrop = LocalMeowBackdrop.current
+    val backdrop = backdropOverride ?: LocalMeowBackdrop.current
     val supported = rememberBlurSupported()
     val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
 

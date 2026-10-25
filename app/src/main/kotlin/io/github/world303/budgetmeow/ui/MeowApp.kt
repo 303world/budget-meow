@@ -58,6 +58,7 @@ import io.github.world303.budgetmeow.ui.component.MeowToast
 import io.github.world303.budgetmeow.ui.component.MeowToastHost
 import io.github.world303.budgetmeow.ui.component.UpdateDialog
 import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
+import io.github.world303.budgetmeow.ui.theme.LocalMeowPageBackdrop
 import io.github.world303.budgetmeow.ui.theme.MeowTheme
 import io.github.world303.budgetmeow.ui.theme.isScheduledDarkNow
 import kotlinx.coroutines.Dispatchers
@@ -297,6 +298,8 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
             containerColor = MiuixTheme.colorScheme.background,
         ) { _ ->
             Box(modifier = Modifier.fillMaxSize()) {
+                // 页面内容单独一层：提示条浮层在层外，模糊到的就是当前页面
+                Box(modifier = Modifier.fillMaxSize().layerBackdrop(pageBackdrop)) {
                 AnimatedContent(
                     targetState = stack.last(),
                     transitionSpec = {
@@ -468,6 +471,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
             )
 
                     else -> Unit
+                }
                 }
                 }
 
