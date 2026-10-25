@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -546,10 +547,13 @@ private fun BigMoney(
             text = "¥",
             // 按基线对齐，而不是底边对齐：字号差一倍时底边对齐会让符号显得往下掉
             modifier = Modifier.alignByBaseline(),
+            // 网页版是 text-4xl 对 text-6xl（0.6 倍），这里 28sp 对 46sp 保持一致比例
+            fontSize = 28.sp,
+            fontWeight = FontWeight.SemiBold,
             style = if (shadow != null) MiuixTheme.textStyles.title3.copy(shadow = shadow) else MiuixTheme.textStyles.title3,
             color = color,
         )
-        Spacer(modifier = Modifier.size(3.dp))
+        Spacer(modifier = Modifier.size(2.dp))
         Text(
             text = amount.formatMoney(),
             modifier = Modifier.alignByBaseline(),
