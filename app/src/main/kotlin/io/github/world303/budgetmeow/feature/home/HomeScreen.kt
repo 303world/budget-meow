@@ -141,6 +141,11 @@ fun HomeScreen(
         lightWallpaper -> Color(0xFF111114)
         else -> Color.White
     }
+    val iconTint = when {
+        !onWallpaper -> MiuixTheme.colorScheme.onSurface
+        lightWallpaper -> Color(0xFF1B1B1F)
+        else -> Color.White
+    }
     val textShadow = if (!onWallpaper) {
         null
     } else {
@@ -194,7 +199,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = MiuixIcons.ListView,
                         contentDescription = "历史记录",
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = iconTint,
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -218,7 +223,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = MiuixIcons.Settings,
                             contentDescription = "设置",
-                            tint = MiuixTheme.colorScheme.onSurface,
+                            tint = iconTint,
                         )
                     }
                 }
