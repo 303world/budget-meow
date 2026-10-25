@@ -5,8 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.store.MessageKind
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
+import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -86,13 +85,15 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         // 落在顶栏下方，不压住首页那排按钮，也不至于盖住正文
                         .padding(start = 28.dp, end = 28.dp, top = 76.dp, bottom = 10.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        // 提示条不用模糊：它在弹层里采样容易错位，实底反而更干净
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.97f))
-                        .border(
-                            width = 0.75.dp,
-                            color = MiuixTheme.colorScheme.dividerLine,
+                        // 玻璃提示条：着色比卡片重一点保证看清字，但关掉受光描边，
+                        // 否则在圆角里会出现一圈像"内嵌方块"的亮边
+                        .meowGlassSurface(
                             shape = RoundedCornerShape(18.dp),
+                            enabled = true,
+                            blurRadius = 24f,
+                            tintColor = MiuixTheme.colorScheme.surface,
+                            tintAlpha = 0.72f,
+                            showHighlight = false,
                         )
                         .padding(horizontal = 18.dp, vertical = 11.dp),
                 ) {

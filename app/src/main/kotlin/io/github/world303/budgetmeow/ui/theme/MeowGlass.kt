@@ -41,6 +41,7 @@ fun Modifier.meowGlassSurface(
     blurRadius: Float = 26f,
     tintColor: Color = MiuixTheme.colorScheme.surfaceContainer,
     tintAlpha: Float? = null,
+    showHighlight: Boolean = true,
 ): Modifier {
     if (!enabled) return background(tintColor, shape).clip(shape)
 
@@ -68,7 +69,11 @@ fun Modifier.meowGlassSurface(
                 contrast = 1.02f,
                 saturation = 1.18f,
             ),
-            highlight = if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight,
+            highlight = when {
+                !showHighlight -> null
+                dark -> Highlight.GlassStrokeMiddleDark
+                else -> Highlight.GlassStrokeMiddleLight
+            },
         )
         .clip(shape)
 }

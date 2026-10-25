@@ -38,10 +38,14 @@ import io.github.world303.budgetmeow.core.backup.BackupService
 import io.github.world303.budgetmeow.core.model.MeowSettings
 import io.github.world303.budgetmeow.core.model.ThemeMode
 import io.github.world303.budgetmeow.core.update.UpdateChecker
+import io.github.world303.budgetmeow.core.update.UpdateInfo
+import io.github.world303.budgetmeow.core.update.UpdateInstaller
+import io.github.world303.budgetmeow.core.EulaStore
 import io.github.world303.budgetmeow.feature.about.APP_VERSION
 import io.github.world303.budgetmeow.feature.about.AboutScreen
 import io.github.world303.budgetmeow.feature.history.HistoryScreen
 import io.github.world303.budgetmeow.feature.history.SearchScreen
+import io.github.world303.budgetmeow.feature.onboarding.ConsentScreen
 import io.github.world303.budgetmeow.feature.home.HomeScreen
 import io.github.world303.budgetmeow.feature.settings.AccountScreen
 import io.github.world303.budgetmeow.feature.settings.SettingsScreen
@@ -49,6 +53,7 @@ import io.github.world303.budgetmeow.feature.stats.StatsScreen
 import io.github.world303.budgetmeow.ui.component.InputDialog
 import io.github.world303.budgetmeow.ui.component.MeowToast
 import io.github.world303.budgetmeow.ui.component.MeowToastHost
+import io.github.world303.budgetmeow.ui.component.UpdateDialog
 import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
 import io.github.world303.budgetmeow.ui.theme.MeowTheme
 import io.github.world303.budgetmeow.ui.theme.isScheduledDarkNow
@@ -122,14 +127,29 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
         if (profile.settings.theme == ThemeMode.Scheduled) isScheduledDarkNow(profile.settings) else null
     }
 
-    // ---------- 自动检查更新 ----------
-    LaunchedEffect(profile.id, profile.settings.autoCheckUpdate) {
-        if (!profile.settings.autoCheckUpdate) return@LaunchedEffect
-        UpdateChecker.check().onSuccess { info ->
-            if (UpdateChecker.isNewer(info.latestVersion, APP_VERSION)) {
-                MeowToast.show("发现新版本 v${info.latestVersion}，可在「关于」里查看")
-            }
+    // ---------- 更新 ----------
+    val installer = remember { UpdateInstaller(context) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateProgress by remember { mutableIntStateOf(-1) }
+
+    val checkUpdate: (Boolean) -> Unit = { silent ->
+        scope.launch {
+            UpdateChecker.check()
+                .onSuccess { info ->
+                    if (UpdateChecker.isNewer(info.latestVersion, APP_VERSION)) {
+                        updateInfo = info
+                        updateProgress = -1
+                    } else if (!silent) {
+                        MeowToast.success("已是最新版本")
+                    }
+                }
+                .onFailure { if (!silent) MeowToast.error(it.message ?: "检查失败") }
         }
+    }
+
+    // 开启自动检查时，每次启动静默查一次，发现新版本直接问要不要更新
+    LaunchedEffect(profile.id, profile.settings.autoCheckUpdate) {
+        if (profile.settings.autoCheckUpdate) checkUpdate(true)
     }
 
     // ---------- 全屏模式 ----------
@@ -251,8 +271,22 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
 
     val backdrop = rememberLayerBackdrop()
 
+    val eula = remember { EulaStore(context) }
+    var consentAccepted by remember { mutableStateOf(eula.hasAccepted()) }
+
     CompositionLocalProvider(LocalMeowBackdrop provides backdrop) {
     MeowTheme(settings = profile.settings, darkOverride = darkOverride) {
+        if (!consentAccepted) {
+            ConsentScreen(
+                onAccept = {
+                    eula.accept()
+                    consentAccepted = true
+                },
+                onDecline = { activity.finishAffinity() },
+            )
+            return@MeowTheme
+        }
+
         // 根 Scaffold 只做弹层宿主：内边距清零，不影响各页面自己的 Scaffold
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -413,6 +447,7 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
             )
 
             Screen.About -> AboutScreen(
+                onCheckUpdate = { checkUpdate(false) },
                 autoCheckUpdate = profile.settings.autoCheckUpdate,
                 onToggleAutoCheck = { enabled ->
                     scope.launch {
@@ -424,6 +459,47 @@ fun MeowApp(container: AppContainer, activity: androidx.activity.ComponentActivi
 
                     else -> Unit
                 }
+                }
+
+                val pending = updateInfo
+                if (pending != null) {
+                    UpdateDialog(
+                        info = pending,
+                        currentVersion = APP_VERSION,
+                        progress = updateProgress,
+                        onDismiss = {
+                            if (updateProgress < 0) {
+                                updateInfo = null
+                                updateProgress = -1
+                            }
+                        },
+                        onUpdate = {
+                            if (!installer.canInstallPackages()) {
+                                installer.openInstallPermission()
+                                MeowToast.warning("请允许「安装未知应用」后再点更新")
+                            } else {
+                                scope.launch {
+                                    updateProgress = 0
+                                    installer.download(pending) { percent -> updateProgress = percent }
+                                        .onSuccess { file ->
+                                            installer.install(file)
+                                                .onSuccess {
+                                                    updateInfo = null
+                                                    updateProgress = -1
+                                                }
+                                                .onFailure {
+                                                    updateProgress = -1
+                                                    MeowToast.error("安装失败：${it.message}")
+                                                }
+                                        }
+                                        .onFailure {
+                                            updateProgress = -1
+                                            MeowToast.error(it.message ?: "下载失败")
+                                        }
+                                }
+                            }
+                        },
+                    )
                 }
 
                 MeowToastHost(

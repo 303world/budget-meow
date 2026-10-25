@@ -4,7 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -14,6 +16,9 @@ data class UpdateInfo(
     val latestVersion: String,
     val releaseUrl: String,
     val notes: String,
+    /** Release 里 app-release.apk 的直链；没有就退回浏览器 */
+    val apkUrl: String? = null,
+    val apkSize: Long = 0L,
 )
 
 /**
@@ -38,11 +43,17 @@ object UpdateChecker {
                 if (connection.responseCode != 200) error("HTTP ${connection.responseCode}")
                 val text = connection.inputStream.bufferedReader().use { it.readText() }
                 val obj = json.parseToJsonElement(text).jsonObject
+                val assets = obj["assets"]?.jsonArray.orEmpty()
+                val apk = assets.firstOrNull {
+                    it.jsonObject["name"]?.jsonPrimitive?.contentOrNull?.endsWith(".apk") == true
+                }?.jsonObject
                 UpdateInfo(
                     latestVersion = obj["tag_name"]?.jsonPrimitive?.contentOrNull?.removePrefix("v").orEmpty(),
                     releaseUrl = obj["html_url"]?.jsonPrimitive?.contentOrNull
                         ?: "https://github.com/303world/budget-meow/releases",
                     notes = obj["body"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    apkUrl = apk?.get("browser_download_url")?.jsonPrimitive?.contentOrNull,
+                    apkSize = apk?.get("size")?.jsonPrimitive?.longOrNull ?: 0L,
                 )
             } catch (io: IOException) {
                 error("网络不可用")

@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import io.github.world303.budgetmeow.core.update.UpdateChecker
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowPage
 import io.github.world303.budgetmeow.ui.component.MeowRow
@@ -34,35 +33,19 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-const val APP_VERSION = "1.2.1"
+const val APP_VERSION = "1.3.0"
 const val GITHUB_URL = "https://github.com/303world/budget-meow"
 const val RELEASES_URL = "https://github.com/303world/budget-meow/releases/latest"
 const val ORIGINAL_SITE_URL = "https://app-1778154199542-u11q8myzx-default.tacore.ai/"
 
-private const val PRIVACY_TEXT = """预算喵是给大学生管生活费的记账工具：不登录也能完整使用，登录只是为了在多台设备之间同步。
-
-1. 账目、配置档、设置都存在 App 的私有目录里，只有本机能读写。
-2. 不登录时，App 不发出任何网络请求（检查更新除外，可以关掉）。
-3. 登录后，账目经 HTTPS 上传到同步服务；服务端只保存账目快照、邮箱与加盐后的密码哈希，不保存明文密码。
-4. 同步服务可以自建，代码在仓库 server/ 目录；官方实例是作者用免费额度搭的，不承诺可用性。
-5. 不含任何统计 SDK、广告 SDK、崩溃上报 SDK。
-6. 导出的备份文件由你选择保存位置，内容不含昵称与头像。
-7. 卸载 App 会连同本地数据一起删除；云端数据要在「账号」页手动注销账号才会清除。"""
-
-private const val TERMS_TEXT = """1. 本应用以 GPL-3.0 协议开源，可自由使用、修改、分发；分发衍生作品须以同一协议开源，且不提供任何担保。
-2. 记账数据由你自己录入，应用只按你设定的规则计算与展示，不构成财务建议。
-3. 因误操作、设备损坏、卸载或未备份导致的数据丢失，作者不承担责任。
-4. 云端同步服务可能随时中断，重要数据请自行导出备份。"""
-
 @Composable
 fun AboutScreen(
+    onCheckUpdate: () -> Unit,
     autoCheckUpdate: Boolean,
     onToggleAutoCheck: (Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var checking by remember { mutableStateOf(false) }
 
     fun openUrl(url: String) {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -104,29 +87,10 @@ fun AboutScreen(
             MeowSection(title = "版本") {
                 MeowRow(
                     title = "检查更新",
-                    summary = "从 GitHub Releases 读取最新版本",
-                    trailingText = if (checking) "检查中…" else "v$APP_VERSION",
-                    showArrow = !checking,
-                    onClick = {
-                        if (checking) return@MeowRow
-                        checking = true
-                        scope.launch {
-                            UpdateChecker.check()
-                                .onSuccess { info ->
-                                    checking = false
-                                    if (UpdateChecker.isNewer(info.latestVersion, APP_VERSION)) {
-                                        MeowToast.show("发现新版本 v${info.latestVersion}")
-                                        openUrl(info.releaseUrl)
-                                    } else {
-                                        MeowToast.success("已是最新版本")
-                                    }
-                                }
-                                .onFailure {
-                                    checking = false
-                                    MeowToast.error(it.message ?: "检查失败")
-                                }
-                        }
-                    },
+                    summary = "在应用内下载并安装，不跳浏览器",
+                    trailingText = "v$APP_VERSION",
+                    showArrow = true,
+                    onClick = onCheckUpdate,
                 )
                 MeowDivider()
                 MeowSwitchRow(
@@ -194,7 +158,7 @@ fun AboutScreen(
             // ---------------- 隐私 ----------------
             MeowSection(title = "隐私政策") {
                 Text(
-                    text = PRIVACY_TEXT,
+                    text = io.github.world303.budgetmeow.core.Legal.PRIVACY,
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(16.dp),
@@ -203,7 +167,7 @@ fun AboutScreen(
 
             MeowSection(title = "用户协议") {
                 Text(
-                    text = TERMS_TEXT,
+                    text = io.github.world303.budgetmeow.core.Legal.TERMS,
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(16.dp),
