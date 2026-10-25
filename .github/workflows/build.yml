@@ -68,8 +68,26 @@ jobs:
       - name: List
         run: ls -l apks
 
+      - name: Extract changelog for this tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 - "$VERSION" <<'PYEOF'
+import re, sys
+version = sys.argv[1]
+text = open('CHANGELOG.md', encoding='utf-8').read()
+pattern = re.compile(r'^## \[' + re.escape(version) + r'\].*?$(.*?)(?=^## |\Z)', re.M | re.S)
+match = pattern.search(text)
+body = match.group(1).strip() if match else ''
+open('release_notes.md', 'w', encoding='utf-8').write(
+    body or f'版本 {version} 的更新日志见 CHANGELOG.md。'
+)
+print('release notes bytes:', len(body))
+PYEOF
+          head -20 release_notes.md
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: apks/*.apk
-          generate_release_notes: true
+          body_path: release_notes.md
+          generate_release_notes: false
