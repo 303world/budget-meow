@@ -26,6 +26,7 @@ import io.github.world303.budgetmeow.ui.component.MeowPage
 import io.github.world303.budgetmeow.ui.component.MeowRow
 import io.github.world303.budgetmeow.ui.component.MeowSection
 import io.github.world303.budgetmeow.ui.component.MeowSwitchRow
+import io.github.world303.budgetmeow.core.update.UpdateSource
 import io.github.world303.budgetmeow.ui.component.MeowToast
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import kotlinx.coroutines.launch
@@ -49,6 +50,7 @@ fun AboutScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    var showSourcePicker by remember { mutableStateOf(false) }
 
     fun openUrl(url: String) {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
