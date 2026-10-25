@@ -5,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,11 +19,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.world303.budgetmeow.core.store.MessageKind
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
-import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -82,23 +84,24 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                 }
                 Box(
                     modifier = Modifier
-                        // 往下让一让：原来紧贴状态栏，会压住首页顶栏那排按钮
+                        // 落在顶栏下方，不压住首页那排按钮，也不至于盖住正文
                         .padding(start = 28.dp, end = 28.dp, top = 76.dp, bottom = 10.dp)
-                        .meowGlassSurface(
-                            shape = RoundedCornerShape(20.dp),
-                            enabled = true,
-                            blurRadius = 22f,
-                            // 提示条要看清字，着色比普通玻璃重一些，避免在彩色壁纸上发灰
-                            tintColor = MiuixTheme.colorScheme.surface,
-                            tintAlpha = 0.9f,
+                        .clip(RoundedCornerShape(18.dp))
+                        // 提示条不用模糊：它在弹层里采样容易错位，实底反而更干净
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.97f))
+                        .border(
+                            width = 0.75.dp,
+                            color = MiuixTheme.colorScheme.dividerLine,
+                            shape = RoundedCornerShape(18.dp),
                         )
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = 18.dp, vertical = 11.dp),
                 ) {
                     Text(
                         text = message.text,
                         style = MiuixTheme.textStyles.footnote1,
                         color = textColor,
                         textAlign = TextAlign.Center,
+                        maxLines = 2,
                     )
                 }
             }

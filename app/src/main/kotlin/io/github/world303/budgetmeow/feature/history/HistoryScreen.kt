@@ -239,9 +239,9 @@ fun HistoryScreen(
                         onClick = {
                             val revertable = selectedRecords.filter { store.isRevertable(it) }
                             when {
-                                !isCurrentMonth -> MeowToast.warning("历史月份不支持撤回，只能删除")
+                                !isCurrentMonth -> MeowToast.warning("历史月份只能删除，不能撤回")
                                 revertable.isEmpty() ->
-                                    MeowToast.warning("选中的记录不能撤回：初始预算、结转、出行开启/结束属于系统性记录")
+                                    MeowToast.warning("选中的记录都不能撤回")
                                 else -> confirmRevert = true
                             }
                         },
