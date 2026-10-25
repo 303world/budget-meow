@@ -90,11 +90,15 @@ fun RecordRow(
     record: BudgetRecord,
     selected: Boolean,
     selecting: Boolean,
+    dimmed: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
     val data = record.data
     val color = recordColor(data.type)
+    val titleColor = if (dimmed) MiuixTheme.colorScheme.disabledOnSurface else Color.Unspecified
+    val subColor = if (dimmed) MiuixTheme.colorScheme.disabledOnSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary
+    val amountColor = if (dimmed) color.copy(alpha = 0.35f) else color
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,20 +119,21 @@ fun RecordRow(
             Text(
                 text = data.note.ifBlank { recordLabel(data.type) },
                 style = MiuixTheme.textStyles.body1,
+                color = titleColor,
                 maxLines = 1,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "${recordLabel(data.type)} · ${formatRecordTime(data.createdAt)}",
                 style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                color = subColor,
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
         MoneyText(
             amount = kotlin.math.abs(data.amount),
             style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-            color = color,
+            color = amountColor,
             showCurrency = false,
         )
     }
@@ -198,6 +203,13 @@ fun HistoryScreen(
 
     val isCurrentMonth = month == currentMonth
     val selectedRecords = records.filter { it.id in selected }
+    val blockedSelected = selectedRecords.any { !store.isRevertable(it) }
+    val revertDisabledReason = when {
+        selected.isEmpty() -> null
+        !isCurrentMonth -> "历史月份只能删除，不能撤回"
+        blockedSelected -> "选中的记录里有不能撤回的项，请只选可撤回的记录"
+        else -> null
+    }
 
     MeowPage(
         title = if (selecting) "已选 ${selected.size} 条" else "历史记录",
@@ -228,6 +240,18 @@ fun HistoryScreen(
         },
         bottomBar = {
             if (selecting) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (revertDisabledReason != null) {
+                        Text(
+                            text = revertDisabledReason,
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -236,17 +260,9 @@ fun HistoryScreen(
                 ) {
                     TextButton(
                         text = "撤回",
-                        onClick = {
-                            val revertable = selectedRecords.filter { store.isRevertable(it) }
-                            when {
-                                !isCurrentMonth -> MeowToast.warning("历史月份只能删除，不能撤回")
-                                revertable.isEmpty() ->
-                                    MeowToast.warning("选中的记录都不能撤回")
-                                else -> confirmRevert = true
-                            }
-                        },
+                        onClick = { confirmRevert = true },
                         modifier = Modifier.weight(1f),
-                        enabled = selected.isNotEmpty(),
+                        enabled = revertDisabledReason == null,
                     )
                     TextButton(
                         text = "删除",
@@ -258,6 +274,7 @@ fun HistoryScreen(
                             textColor = Color.White,
                         ),
                     )
+                }
                 }
             }
         },
@@ -289,6 +306,7 @@ fun HistoryScreen(
                             record = record,
                             selected = record.id in selected,
                             selecting = selecting,
+                            dimmed = selecting && !store.isRevertable(record),
                             onClick = {
                                 if (selecting) {
                                     selected = if (record.id in selected) {
@@ -338,6 +356,7 @@ fun HistoryScreen(
                         else -> "做一笔反向记账，把余额和汇总还原"
                     },
                     showArrow = revertable,
+                    enabled = revertable,
                     onClick = if (revertable) {
                         {
                             actionRecord = null

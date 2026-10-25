@@ -119,24 +119,41 @@ fun MeowRow(
     summary: String? = null,
     trailingText: String? = null,
     showArrow: Boolean = false,
+    enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    val titleColor = if (enabled) {
+        MiuixTheme.colorScheme.onSurface
+    } else {
+        MiuixTheme.colorScheme.disabledOnSurface
+    }
+    val summaryColor = if (enabled) {
+        MiuixTheme.colorScheme.onSurfaceVariantSummary
+    } else {
+        MiuixTheme.colorScheme.disabledOnSurface
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .then(
+                if (onClick != null && enabled) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                },
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MiuixTheme.textStyles.body1)
+            Text(text = title, style = MiuixTheme.textStyles.body1, color = titleColor)
             if (!summary.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = summary,
                     style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = summaryColor,
                 )
             }
         }
