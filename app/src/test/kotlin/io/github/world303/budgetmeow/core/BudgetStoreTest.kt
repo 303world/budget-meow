@@ -228,3 +228,77 @@ class BudgetStoreTest {
         assertEquals(2, big.size) // 300 支出 + 1000 初始预算
     }
 }
+
+class AmountLimitTest {
+
+    private val overLimit = 20_000_000.0
+
+    @Test
+    fun `初始化预算超过上限会被拒绝`() = runTest {
+        val repo = FakeRepository()
+        val store = BudgetStore(repo, "p1")
+        store.load()
+
+        store.setInitialBudget(overLimit)
+
+        assertNull(store.state.value.summary)
+        assertTrue(store.state.value.needsInit)
+    }
+
+    @Test
+    fun `修改本月预算超过上限会被拒绝`() = runTest {
+        val repo = FakeRepository()
+        val store = BudgetStore(repo, "p1")
+        store.load()
+        store.setInitialBudget(1000.0)
+
+        store.updateInitialBudget(overLimit)
+
+        assertEquals(1000.0, store.state.value.initialBudget, 1e-9)
+    }
+
+    @Test
+    fun `单笔记账超过上限会被拒绝`() = runTest {
+        val repo = FakeRepository()
+        val store = BudgetStore(repo, "p1")
+        store.load()
+        store.setInitialBudget(1000.0)
+
+        val before = store.state.value.visibleRecords.size
+        store.addRecord(RecordType.Expense, overLimit, "不该记上")
+        store.addRecord(RecordType.Income, overLimit, "也不该记上")
+
+        assertEquals(before, store.state.value.visibleRecords.size)
+        assertEquals(1000.0, store.state.value.balance, 1e-9)
+    }
+
+    @Test
+    fun `出行预算超过上限会被拒绝`() = runTest {
+        val repo = FakeRepository()
+        val store = BudgetStore(repo, "p1")
+        store.load()
+        store.setInitialBudget(1000.0)
+
+        store.startTrip(overLimit)
+
+        assertNull(store.state.value.activeTrip)
+        assertEquals(1000.0, store.state.value.balance, 1e-9)
+    }
+
+    @Test
+    fun `增加出行预算与出行收支超过上限都会被拒绝`() = runTest {
+        val repo = FakeRepository()
+        val store = BudgetStore(repo, "p1")
+        store.load()
+        store.setInitialBudget(1000.0)
+        store.startTrip(200.0)
+
+        val tripBalance = store.state.value.tripBalance
+        store.addTripBudget(overLimit)
+        store.addTripRecord(income = false, amount = overLimit)
+        store.addTripRecord(income = true, amount = overLimit)
+
+        assertEquals(tripBalance, store.state.value.tripBalance, 1e-9)
+        assertEquals(800.0, store.state.value.balance, 1e-9)
+    }
+}
