@@ -6,7 +6,9 @@ import io.github.world303.budgetmeow.core.model.BudgetRecordData
 import io.github.world303.budgetmeow.core.model.BudgetSummary
 import io.github.world303.budgetmeow.core.model.BudgetSummaryData
 import io.github.world303.budgetmeow.core.model.Ids
+import io.github.world303.budgetmeow.core.model.AMOUNT_LIMIT_MESSAGE
 import io.github.world303.budgetmeow.core.model.BUDGET_LIMIT_JOKE
+import io.github.world303.budgetmeow.core.model.MAX_MONEY
 import io.github.world303.budgetmeow.core.model.MAX_MONTHLY_BUDGET
 import io.github.world303.budgetmeow.core.model.MonthKey
 import io.github.world303.budgetmeow.core.model.MonthPoint
@@ -187,6 +189,10 @@ class BudgetStore(
             message("金额必须大于 0", MessageKind.Warning)
             return@withLock
         }
+        if (amount > MAX_MONEY) {
+            message(AMOUNT_LIMIT_MESSAGE, MessageKind.Warning)
+            return@withLock
+        }
         val data = summary.data
         var balanceChange = 0.0
         var savedChange = 0.0
@@ -263,6 +269,10 @@ class BudgetStore(
             message("出行预算必须大于 0", MessageKind.Warning)
             return@withLock
         }
+        if (amount > MAX_MONEY) {
+            message("出行预算上限 ¥10,000,000", MessageKind.Warning)
+            return@withLock
+        }
         if (amount > summary.data.currentBalance) {
             message("出行预算不能超过剩余预算", MessageKind.Warning)
             return@withLock
@@ -313,6 +323,10 @@ class BudgetStore(
         }
         if (amount <= 0) {
             message("金额必须大于 0", MessageKind.Warning)
+            return@withLock
+        }
+        if (amount > MAX_MONEY) {
+            message(AMOUNT_LIMIT_MESSAGE, MessageKind.Warning)
             return@withLock
         }
         if (amount > summary.data.currentBalance) {
@@ -373,6 +387,10 @@ class BudgetStore(
         }
         if (amount <= 0) {
             message("金额必须大于 0", MessageKind.Warning)
+            return@withLock
+        }
+        if (amount > MAX_MONEY) {
+            message(AMOUNT_LIMIT_MESSAGE, MessageKind.Warning)
             return@withLock
         }
         val now = TimeUtil.nowIso()
@@ -830,12 +848,14 @@ class BudgetStore(
         val notes = mutableListOf<String>()
         var data = summary.data
         if (newBalance != null) {
-            notes += "余额: ¥${data.currentBalance.format2()} → ¥${newBalance.format2()}"
-            data = data.copy(currentBalance = newBalance.round2())
+            val safe = newBalance.coerceIn(-MAX_MONEY, MAX_MONEY)
+            notes += "余额: ¥${data.currentBalance.format2()} → ¥${safe.format2()}"
+            data = data.copy(currentBalance = safe.round2())
         }
         if (newSaved != null) {
-            notes += "省钱: ¥${data.savedAmount.format2()} → ¥${newSaved.format2()}"
-            data = data.copy(savedAmount = newSaved.round2())
+            val safe = newSaved.coerceIn(0.0, MAX_MONEY)
+            notes += "省钱: ¥${data.savedAmount.format2()} → ¥${safe.format2()}"
+            data = data.copy(savedAmount = safe.round2())
         }
         data = data.copy(lastUpdatedAt = now)
         dataset = dataset.copy(

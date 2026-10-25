@@ -3,7 +3,8 @@ package io.github.world303.budgetmeow.core.calc
 import kotlin.math.abs
 
 const val MAX_EXPRESSION_LENGTH = 30
-const val MAX_AMOUNT = 99_999_999.99
+// 单笔金额上限：与预算上限统一，避免两套数字
+const val MAX_AMOUNT = io.github.world303.budgetmeow.core.model.MAX_MONEY
 const val MAX_NOTE_LENGTH = 50
 
 /** 计算器按下一次键后的完整状态 */
