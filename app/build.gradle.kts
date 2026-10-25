@@ -13,8 +13,8 @@ android {
         // 液态玻璃用 AGSL RuntimeShader，miuix-blur 要求 API 33
         minSdk = 33
         targetSdk = 37
-        versionCode = 9
-        versionName = "1.4.0"
+        versionCode = 10
+        versionName = "1.4.1"
     }
 
     signingConfigs {

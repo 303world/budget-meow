@@ -78,12 +78,19 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
         ) {
             val message = current
             if (message != null) {
-                val textColor = when (message.kind) {
-                    MessageKind.Error -> MeowPalette.Red
-                    MessageKind.Warning -> MeowPalette.Orange
-                    MessageKind.Success -> MiuixTheme.colorScheme.onSurface
-                    MessageKind.Info -> MiuixTheme.colorScheme.onSurface
+                val baseColor = when {
+                    message.kind == MessageKind.Error -> MeowPalette.Red
+                    message.kind == MessageKind.Warning -> MeowPalette.Orange
+                    dark -> androidx.compose.ui.graphics.Color.White
+                    else -> androidx.compose.ui.graphics.Color(0xFF1B1B1F)
                 }
+                val textStyle = MiuixTheme.textStyles.footnote1.copy(
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = if (dark) 0.55f else 0.28f),
+                        offset = androidx.compose.ui.geometry.Offset(0f, 1f),
+                        blurRadius = 6f,
+                    ),
+                )
                 Box(
                     modifier = Modifier
                         // 落在顶栏下方，不压住首页那排按钮，也不至于盖住正文
@@ -93,10 +100,10 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                         .meowGlassSurface(
                             shape = RoundedCornerShape(18.dp),
                             enabled = true,
-                            blurRadius = 24f,
+                            // 模糊给足，着色给薄：白底一重就会把壁纸糊成灰白
+                            blurRadius = 30f,
                             tintColor = MiuixTheme.colorScheme.surface,
-                            tintAlpha = 0.64f,
-                            // 提示条小，用最细的一档描边，既有一圈受光又不至于糊成一圈亮边
+                            tintAlpha = if (dark) 0.34f else 0.26f,
                             highlight = if (dark) {
                                 Highlight.GlassStrokeSmallDark
                             } else {
@@ -107,8 +114,8 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         text = message.text,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = textColor,
+                        style = textStyle,
+                        color = baseColor,
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                     )
