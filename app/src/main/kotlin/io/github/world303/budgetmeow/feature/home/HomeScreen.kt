@@ -55,6 +55,7 @@ import io.github.world303.budgetmeow.ui.component.MeowRow
 import io.github.world303.budgetmeow.ui.theme.LocalMeowBackdrop
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import io.github.world303.budgetmeow.ui.theme.MeowWallpaperBackground
+import io.github.world303.budgetmeow.ui.theme.rememberWallpaperTone
 import io.github.world303.budgetmeow.ui.theme.meowGlassSurface
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
@@ -126,7 +127,28 @@ fun HomeScreen(
         if (state.activeTrip == null) isTripMode = false
     }
 
-    val hasWallpaper = settings.wallpaperPath != null
+    val wallpaperTone = rememberWallpaperTone(settings.wallpaperPath)
+    val onWallpaper = wallpaperTone != null
+    val lightWallpaper = (wallpaperTone ?: 0f) > 0.55f
+    val labelColor = when {
+        !onWallpaper -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        lightWallpaper -> Color(0xFF3A3A3C)
+        else -> Color.White.copy(alpha = 0.82f)
+    }
+    val bigTextColor = when {
+        !onWallpaper -> Color.Unspecified
+        lightWallpaper -> Color(0xFF111114)
+        else -> Color.White
+    }
+    val textShadow = if (!onWallpaper) {
+        null
+    } else {
+        androidx.compose.ui.graphics.Shadow(
+            color = if (lightWallpaper) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.55f),
+            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+            blurRadius = 10f,
+        )
+    }
     val headerText = when (settings.headerDisplayMode) {
         HeaderDisplayMode.Nickname -> profile.nickname
         HeaderDisplayMode.Custom -> settings.headerCustomText.ifBlank { "我的预算" }
@@ -214,15 +236,15 @@ fun HomeScreen(
                     Text(
                         text = "出行余额",
                         style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = labelColor,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    BigMoney(state.tripBalance, withShadow = hasWallpaper)
+                    BigMoney(state.tripBalance, color = bigTextColor, shadow = textShadow)
                 } else {
                     Text(
                         text = "剩余预算",
                         style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = labelColor,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     if (state.balance < 0) {
@@ -239,25 +261,25 @@ fun HomeScreen(
                     }
                     BigMoney(
                         amount = state.balance,
-                        color = if (state.balance < 0) MeowPalette.Red else Color.Unspecified,
-                        withShadow = hasWallpaper,
+                        color = if (state.balance < 0) MeowPalette.Red else bigTextColor,
+                        shadow = textShadow,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = state.summary?.data?.lastUpdatedAt?.let { "上次更新: ${formatRecordTime(it)}" }
                             ?: "暂无更新",
                         style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = labelColor,
                     )
                     if (settings.showSaved) {
                         Spacer(modifier = Modifier.height(28.dp))
                         Text(
                             text = "已节约",
                             style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            color = labelColor,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        BigMoney(amount = state.savedAmount, color = MeowPalette.Green, withShadow = hasWallpaper)
+                        BigMoney(amount = state.savedAmount, color = MeowPalette.Green, shadow = textShadow)
                     }
                 }
             }
@@ -517,17 +539,8 @@ private fun HeaderPill(
 private fun BigMoney(
     amount: Double,
     color: Color = Color.Unspecified,
-    withShadow: Boolean = false,
+    shadow: androidx.compose.ui.graphics.Shadow? = null,
 ) {
-    val shadow = if (withShadow) {
-        androidx.compose.ui.graphics.Shadow(
-            color = Color.Black.copy(alpha = 0.45f),
-            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-            blurRadius = 12f,
-        )
-    } else {
-        null
-    }
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = "¥",

@@ -40,6 +40,7 @@ fun Modifier.meowGlassSurface(
     enabled: Boolean,
     blurRadius: Float = 26f,
     tintColor: Color = MiuixTheme.colorScheme.surfaceContainer,
+    tintAlpha: Float? = null,
 ): Modifier {
     if (!enabled) return background(tintColor, shape).clip(shape)
 
@@ -48,12 +49,9 @@ fun Modifier.meowGlassSurface(
     val dark = MiuixTheme.colorScheme.onBackground.luminance() > 0.5f
 
     if (backdrop == null || !supported) {
-        // 降级：没有 RuntimeShader 时用半透明玻璃色，仍然保留圆角与层次
-        return background(tintColor.copy(alpha = if (dark) 0.55f else 0.72f), shape).clip(shape)
+        return background(tintColor.copy(alpha = tintAlpha ?: if (dark) 0.55f else 0.72f), shape).clip(shape)
     }
 
-    // 液态玻璃的三件事：背景真模糊 + 一层很淡的着色 + 受光描边。
-    // 着色别下重手，否则壁纸就被盖成一块死板的色块（第一版犯过这个错）。
     return this
         .textureBlur(
             backdrop = backdrop,
@@ -62,7 +60,9 @@ fun Modifier.meowGlassSurface(
             noiseCoefficient = 0.008f,
             colors = BlurColors(
                 blendColors = listOf(
-                    BlendColorEntry(tintColor.copy(alpha = if (dark) 0.30f else 0.52f)),
+                    BlendColorEntry(
+                        tintColor.copy(alpha = tintAlpha ?: if (dark) 0.30f else 0.52f),
+                    ),
                 ),
                 brightness = if (dark) 0.05f else 0.04f,
                 contrast = 1.02f,
@@ -73,7 +73,36 @@ fun Modifier.meowGlassSurface(
         .clip(shape)
 }
 
-/** 背景层：壁纸 → 玻璃模式下的柔和渐变 → 纯色，三档退化 */
+/**
+ * 壁纸平均亮度（0 暗 ~ 1 亮），用于自动选择文字颜色。
+ *
+ * 为什么要这么做：给壁纸压一层黑/白蒙层会改变壁纸本身的颜色（用户明确不接受）。
+ * 更好的办法是壁纸不动，按它的明暗切换前景文字的黑白，再配一层反向投影兜底。
+ */
+@Composable
+fun rememberWallpaperTone(wallpaperPath: String?): Float? = remember(wallpaperPath) {
+    if (wallpaperPath == null) return@remember null
+    runCatching {
+        val options = BitmapFactory.Options().apply { inSampleSize = 24 }
+        val bitmap = BitmapFactory.decodeFile(wallpaperPath, options) ?: return@runCatching null
+        var sum = 0.0
+        var count = 0
+        for (y in 0 until bitmap.height) {
+            for (x in 0 until bitmap.width) {
+                val color = bitmap.getPixel(x, y)
+                val r = (color shr 16 and 0xFF) / 255.0
+                val g = (color shr 8 and 0xFF) / 255.0
+                val b = (color and 0xFF) / 255.0
+                sum += 0.2126 * r + 0.7152 * g + 0.0722 * b
+                count++
+            }
+        }
+        bitmap.recycle()
+        if (count == 0) null else (sum / count).toFloat()
+    }.getOrNull()
+}
+
+/** 背景层：壁纸原样显示（不压暗也不提亮），没壁纸时用主题色做一层很淡的渐变 */
 @Composable
 fun MeowWallpaperBackground(
     wallpaperPath: String?,
@@ -81,36 +110,18 @@ fun MeowWallpaperBackground(
     modifier: Modifier = Modifier,
 ) {
     val colors = MiuixTheme.colorScheme
-    // onBackground 接近白色 ⇒ 当前是深色主题
-    val dark = colors.onBackground.luminance() > 0.5f
 
     Box(modifier = modifier.background(colors.surface)) {
         val bitmap = remember(wallpaperPath) {
             wallpaperPath?.let { runCatching { BitmapFactory.decodeFile(it) }.getOrNull() }
         }
         when {
-            bitmap != null -> {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-                // 蒙层保证文字对比度：深色主题压黑保白字，浅色主题压白保深字
-                if (dark) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.42f)),
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.White.copy(alpha = 0.28f)),
-                    )
-                }
-            }
+            bitmap != null -> Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
 
             glassEnabled -> Box(
                 modifier = Modifier
@@ -118,9 +129,9 @@ fun MeowWallpaperBackground(
                     .background(
                         Brush.linearGradient(
                             listOf(
-                                colors.primary.copy(alpha = 0.16f),
+                                colors.primary.copy(alpha = 0.18f),
                                 colors.surface,
-                                colors.secondary.copy(alpha = 0.14f),
+                                colors.secondary.copy(alpha = 0.16f),
                             ),
                         ),
                     ),

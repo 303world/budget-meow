@@ -8,7 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,10 +36,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -251,11 +247,8 @@ private fun ExpressionDisplay(
     val display = state.displayText()
     val isEmpty = display.isEmpty()
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    var magnifierX by remember { mutableStateOf<Float?>(null) }
     val primary = MiuixTheme.colorScheme.primary
     val textStyle = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
-    val view = LocalView.current
-    val density = LocalDensity.current
     val cursorAlpha by rememberInfiniteTransition().animateFloat(
         initialValue = 1f,
         targetValue = 0f,
@@ -299,10 +292,9 @@ private fun ExpressionDisplay(
                         }
                     }
                     .pointerInput(isEmpty) {
-                        detectDragGesturesAfterLongPress(
+                        // 直接拖动即可把光标挪到想去的位置
+                        detectDragGestures(
                             onDragStart = { offset ->
-                                view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-                                magnifierX = offset.x
                                 layout?.let { l ->
                                     onCursorChange(
                                         l.getOffsetForPosition(offset).coerceIn(0, l.layoutInput.text.length),
@@ -310,7 +302,6 @@ private fun ExpressionDisplay(
                                 }
                             },
                             onDrag = { change, _ ->
-                                magnifierX = change.position.x
                                 layout?.let { l ->
                                     onCursorChange(
                                         l.getOffsetForPosition(change.position)
@@ -318,8 +309,6 @@ private fun ExpressionDisplay(
                                     )
                                 }
                             },
-                            onDragEnd = { magnifierX = null },
-                            onDragCancel = { magnifierX = null },
                         )
                     },
             ) {
@@ -366,48 +355,6 @@ private fun ExpressionDisplay(
                     }
                 }
 
-                // 真放大镜：用同一份排版结果放大 s 倍，并把光标点平移到圆心
-                val mx = magnifierX
-                if (mx != null && textLayout != null) {
-                    val scale = 1.9f
-                    val loupe = 84.dp
-                    val radiusPx = with(density) { (loupe / 2).toPx() }
-                    val safeCursor = state.cursor.coerceIn(0, textLayout.layoutInput.text.length)
-                    val cursorRect = textLayout.getCursorRect(safeCursor)
-                    val cursorCenterX = cursorRect.left + cursorRect.width / 2f
-                    val cursorCenterY = cursorRect.height / 2f
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .offset {
-                                val half = loupe.toPx() / 2
-                                val maxX = (containerWidth.toPx() - loupe.toPx()).coerceAtLeast(0f)
-                                IntOffset((mx - half).coerceIn(0f, maxX).roundToInt(), 0)
-                            }
-                            .size(loupe)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                            .border(1.dp, MiuixTheme.colorScheme.outline, CircleShape),
-                    ) {
-                        Text(
-                            text = annotated,
-                            style = textStyle,
-                            maxLines = 1,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier
-                                // requiredWidth：必须突破放大镜 84dp 的父约束，否则文字会被压成窄条
-                                .requiredWidth(containerWidth)
-                                .graphicsLayer {
-                                    transformOrigin = TransformOrigin(0f, 0f)
-                                    scaleX = scale
-                                    scaleY = scale
-                                    translationX = radiusPx - cursorCenterX * scale
-                                    translationY = radiusPx - cursorCenterY * scale
-                                },
-                        )
-                    }
-                }
             }
         }
     }

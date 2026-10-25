@@ -82,8 +82,16 @@ fun MeowToastHost(modifier: Modifier = Modifier) {
                 }
                 Box(
                     modifier = Modifier
-                        .padding(horizontal = 28.dp, vertical = 10.dp)
-                        .meowGlassSurface(RoundedCornerShape(20.dp), enabled = true, blurRadius = 22f)
+                        // 往下让一让：原来紧贴状态栏，会压住首页顶栏那排按钮
+                        .padding(start = 28.dp, end = 28.dp, top = 76.dp, bottom = 10.dp)
+                        .meowGlassSurface(
+                            shape = RoundedCornerShape(20.dp),
+                            enabled = true,
+                            blurRadius = 22f,
+                            // 提示条要看清字，着色比普通玻璃重一些，避免在彩色壁纸上发灰
+                            tintColor = MiuixTheme.colorScheme.surface,
+                            tintAlpha = 0.9f,
+                        )
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                 ) {
                     Text(
