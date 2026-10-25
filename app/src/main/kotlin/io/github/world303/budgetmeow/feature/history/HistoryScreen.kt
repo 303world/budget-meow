@@ -39,6 +39,8 @@ import io.github.world303.budgetmeow.ui.component.EmptyHint
 import io.github.world303.budgetmeow.ui.component.InputDialog
 import io.github.world303.budgetmeow.ui.component.MeowDivider
 import io.github.world303.budgetmeow.ui.component.MeowPage
+import io.github.world303.budgetmeow.ui.component.MeowRow
+import io.github.world303.budgetmeow.ui.component.MeowToast
 import io.github.world303.budgetmeow.ui.component.MoneyText
 import io.github.world303.budgetmeow.ui.theme.MeowPalette
 import kotlinx.coroutines.launch
@@ -49,6 +51,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -182,6 +185,7 @@ fun HistoryScreen(
     var editing by remember { mutableStateOf<BudgetRecord?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRevert by remember { mutableStateOf(false) }
+    var actionRecord by remember { mutableStateOf<BudgetRecord?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(month, store) {
@@ -232,9 +236,17 @@ fun HistoryScreen(
                 ) {
                     TextButton(
                         text = "撤回",
-                        onClick = { confirmRevert = true },
+                        onClick = {
+                            val revertable = selectedRecords.filter { store.isRevertable(it) }
+                            when {
+                                !isCurrentMonth -> MeowToast.warning("历史月份不支持撤回，只能删除")
+                                revertable.isEmpty() ->
+                                    MeowToast.warning("选中的记录不能撤回：初始预算、结转、出行开启/结束属于系统性记录")
+                                else -> confirmRevert = true
+                            }
+                        },
                         modifier = Modifier.weight(1f),
-                        enabled = selected.isNotEmpty() && isCurrentMonth,
+                        enabled = selected.isNotEmpty(),
                     )
                     TextButton(
                         text = "删除",
@@ -285,7 +297,7 @@ fun HistoryScreen(
                                         selected + record.id
                                     }
                                 } else {
-                                    editing = record
+                                    actionRecord = record
                                 }
                             },
                             onLongClick = {
@@ -296,6 +308,62 @@ fun HistoryScreen(
                         MeowDivider()
                     }
                 }
+            }
+        }
+    }
+
+    val action = actionRecord
+    if (action != null) {
+        val revertable = isCurrentMonth && store.isRevertable(action)
+        OverlayBottomSheet(
+            show = true,
+            title = "记录操作",
+            onDismissRequest = { actionRecord = null },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                MeowRow(
+                    title = "修改备注",
+                    summary = action.data.note.ifBlank { "无备注" },
+                    onClick = {
+                        actionRecord = null
+                        editing = action
+                    },
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "撤回这条",
+                    summary = when {
+                        !isCurrentMonth -> "历史月份不支持撤回，只能删除"
+                        !store.isRevertable(action) -> "初始预算 / 结转 / 出行开启·结束 属于系统性记录，不能撤回"
+                        else -> "做一笔反向记账，把余额和汇总还原"
+                    },
+                    showArrow = revertable,
+                    onClick = if (revertable) {
+                        {
+                            actionRecord = null
+                            scope.launch {
+                                store.revertRecord(action)
+                                records = store.recordsOfMonth(month)
+                                summary = store.summaryOfMonth(month)
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                )
+                MeowDivider()
+                MeowRow(
+                    title = "删除这条",
+                    summary = "只从列表里去掉，不改余额",
+                    onClick = {
+                        actionRecord = null
+                        scope.launch {
+                            store.batchDelete(listOf(action))
+                            records = store.recordsOfMonth(month)
+                            summary = store.summaryOfMonth(month)
+                        }
+                    },
+                )
             }
         }
     }

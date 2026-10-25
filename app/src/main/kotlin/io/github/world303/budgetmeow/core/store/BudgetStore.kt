@@ -562,7 +562,7 @@ class BudgetStore(
     suspend fun revertRecord(record: BudgetRecord) = mutex.withLock {
         val summary = dataset.summaryOf(currentMonth) ?: return@withLock
         if (!isRevertable(record)) {
-            message("该记录不支持撤回", MessageKind.Warning)
+            message("这条不能撤回：初始预算、结转、出行开启/结束属于系统性记录", MessageKind.Warning)
             return@withLock
         }
         var data = summary.data
@@ -752,9 +752,15 @@ class BudgetStore(
             tripRecords = tripRecords,
         )
         persist()
+        val blocked = records.count { !isRevertable(it) }
+        val text = buildString {
+            append("已撤回 $success 条")
+            if (blocked > 0) append("；$blocked 条不能撤回（初始预算 / 结转 / 出行相关）")
+            if (failed > 0) append("；$failed 条处理失败")
+        }
         message(
-            if (failed > 0) "撤回完成：成功 $success 条，失败 $failed 条" else "已撤回 $success 条记录",
-            if (failed > 0) MessageKind.Warning else MessageKind.Success,
+            text,
+            if (blocked > 0 || failed > 0) MessageKind.Warning else MessageKind.Success,
         )
     }
 
